@@ -1,0 +1,65 @@
+.wheel-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+  height: 140px;
+  background: #1a1a1a;
+  border-radius: 50%;
+  border: 2px solid #333;
+  z-index: 2;
+}
+
+.key {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+}
+
+.key span {
+  position: absolute;
+  transform: rotate(30deg);
+  white-space: nowrap;
+}
+
+.major {
+  transform: rotate(calc(var(--angle) - 15deg));
+}
+
+.major span {
+  left: 75%;
+  top: 15%;
+}
+
+.minor {
+  transform: rotate(calc(var(--angle) - 15deg));
+  clip-path: polygon(50% 50%, 60% 30%, 70% 30%, 70% 40%);
+}
+
+.minor span {
+  left: 62%;
+  top: 35%;
+}
+
+@media (max-width: 768px) {
+  .harmonic-wheel {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .wheel-center {
+    width: 84px;
+    height: 84px;
+  }
+  
+  .key {
+    font-size: 12px;
+  }
+} 
