@@ -1,5 +1,5 @@
-import { HarmonicWheel } from './components/HarmonicWheel';
-import './styles/App.css';
+import { HarmonicWheel } from "./components/HarmonicWheel";
+import "./styles/App.css";
 
 function App() {
   return (
@@ -11,4 +11,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
