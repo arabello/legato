@@ -1,21 +1,5 @@
 .app {
   background-color: #1a1a1a;
-  color: #ffffff;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.container {
-  width: 700px;
-  margin: 0 auto;
-  padding: 20px;
-  text-align: center;
-}
-
-h1 {
-  margin-bottom: 40px;
-  color: #fff;
-  font-family: "Arial", sans-serif;
+  width: 100vw;
+  height: 100vh;
 }
