@@ -1,4 +1,4 @@
-import { Flame, Layers, Plus } from "lucide-react";
+import { ChevronDownIcon, Flame, Layers, MinusIcon, Plus } from "lucide-react";
 import * as React from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router";
 import { Button } from "~/components/ui/button";
@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { describeTransition, type MixTrack } from "~/core/mix-storage";
 import { formatOpenKey, openKeyFromString } from "~/core/openKey";
 import {
+  customHarmonicSuggestion,
   getHarmonicSuggestions,
   projectHarmonicSuggestion,
   type HarmonicMood,
   type HarmonicRuleDefinition,
   type HarmonicRuleType,
   type HarmonicSuggestion,
-  customHarmonicSuggestion,
 } from "~/core/rules";
 import type { Route } from "./+types/mix";
 import type { AppLayoutContext } from "./layout";
@@ -242,23 +242,18 @@ export default function Mix() {
         </div>
 
         {/* Track Timeline */}
-        <div>
-          <div className="relative">
-            {trackTransitions.map(({ track, rule }, index) => {
-              const ruleType = rule?.type;
-              const ruleMood = rule?.mood;
-              const isSelected = track.id === selectedTrackId;
-              return (
+        <div className="flex flex-col items-center">
+          {trackTransitions.map(({ track, rule }, index) => {
+            const ruleType = rule?.type;
+            const ruleMood = rule?.mood;
+            const isSelected = track.id === selectedTrackId;
+            return (
+              <>
                 <div
                   key={track.id}
                   className="relative"
                   onClick={() => setSelectedTrackId(track.id)}
                 >
-                  {/* Connector Line */}
-                  {index > 0 && (
-                    <div className="bg-border absolute top-0 left-1/2 h-8 w-0.5 -translate-x-1/2 -translate-y-8" />
-                  )}
-
                   {/* Track Node */}
                   <div className="flex items-center gap-6 py-4">
                     {/* Left side - Relationship info */}
@@ -332,24 +327,27 @@ export default function Mix() {
                     </div>
                   </div>
                 </div>
-              );
-            })}
+                {/* Separator */}
+                {
+                  <MinusIcon className="text-muted-foreground/30 h-4 w-4 -rotate-90" />
+                }
 
-            {/* Add Track Button */}
-            <div className="relative py-4">
-              <div className="bg-border absolute top-0 left-1/2 h-4 w-0.5 -translate-x-1/2" />
-              <div className="flex justify-center">
-                <button className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105">
-                  <Plus className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-          </div>
+                {/* Add Track Button */}
+                {index === mix.tracks.length - 1 && (
+                  <div className="mt-5 flex justify-center">
+                    <button className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105">
+                      <Plus className="h-6 w-6" />
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })}
         </div>
 
         {/* Suggested Next Keys */}
         <Card className="mx-auto mt-8 max-w-xl">
-          <CardHeader className="pb-3">
+          <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                 Suggested Next Keys
