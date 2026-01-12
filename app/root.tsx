@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -5,10 +6,14 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigate,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+
+const base = import.meta.env.PROD ? "/legato/" : "/";
+const redirectStorageKey = "legato:redirectPath";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -24,26 +29,26 @@ export const links: Route.LinksFunction = () => [
   {
     rel: "icon",
     type: "image/png",
-    href: "/favicon-96x96.png",
+    href: `${base}/favicon-96x96.png`,
     sizes: "96x96",
   },
   {
     rel: "icon",
     type: "image/svg+xml",
-    href: "/favicon.svg",
+    href: `${base}/favicon.svg`,
   },
   {
     rel: "shortcut icon",
-    href: "/favicon.ico",
+    href: `${base}/favicon.ico`,
   },
   {
     rel: "apple-touch-icon",
     sizes: "180x180",
-    href: "/apple-touch-icon.png",
+    href: `${base}/apple-touch-icon.png`,
   },
   {
     rel: "manifest",
-    href: "/site.webmanifest",
+    href: `${base}/site.webmanifest`,
   },
 ];
 
@@ -66,6 +71,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedPath = window.sessionStorage.getItem(redirectStorageKey);
+    if (!storedPath) return;
+    window.sessionStorage.removeItem(redirectStorageKey);
+    navigate(storedPath, { replace: true });
+  }, [navigate]);
+
   return <Outlet />;
 }
 

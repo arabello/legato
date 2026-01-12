@@ -241,7 +241,12 @@ export default function Mix() {
       return "";
     }
     const encoded = encodeMixSharePayload(mix);
-    const url = new URL(window.location.origin + `/mix/${mix.id}`);
+    const basePath = import.meta.env.BASE_URL ?? "/";
+    const normalizedBase = basePath.endsWith("/")
+      ? basePath.slice(0, -1)
+      : basePath;
+    const sharePath = `${normalizedBase}/mix/${mix.id}`;
+    const url = new URL(sharePath, window.location.origin);
     url.searchParams.set("share", encoded);
     return url.toString();
   }, [mix]);

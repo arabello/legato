@@ -1,9 +1,11 @@
 {
   "name": "legato",
+  "homepage": "https://matteopellegrino.dev/legato",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "react-router build",
+    "postbuild": "node scripts/copy-404.mjs",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
@@ -40,5 +42,6 @@
     "typescript": "^5.9.2",
     "vite": "^7.1.7",
     "vite-tsconfig-paths": "^5.1.4"
-  }
+  },
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
 }
