@@ -2,10 +2,13 @@ import { formatOpenKey, openKeyFromString } from "./openKey";
 import {
   getHarmonicRule,
   harmonicRuleDefinitions,
+  customHarmonicSuggestion,
+  CUSTOM_HARMONIC_RULE_ID,
   type HarmonicRule,
   type HarmonicMood,
   type HarmonicRuleDefinition,
   type HarmonicRuleType,
+  type CustomHarmonicSuggestion,
 } from "./transitions";
 
 export {
@@ -14,6 +17,9 @@ export {
   type HarmonicMood,
   type HarmonicRuleDefinition,
   type HarmonicRuleType,
+  customHarmonicSuggestion,
+  CUSTOM_HARMONIC_RULE_ID,
+  type CustomHarmonicSuggestion,
 } from "./transitions";
 
 export type HarmonicSuggestion = Omit<HarmonicRuleDefinition, "transform">;

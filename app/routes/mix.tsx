@@ -12,6 +12,7 @@ import {
   type HarmonicRuleDefinition,
   type HarmonicRuleType,
   type HarmonicSuggestion,
+  customHarmonicSuggestion,
 } from "~/core/rules";
 import type { Route } from "./+types/mix";
 import type { AppLayoutContext } from "./layout";
@@ -50,6 +51,31 @@ function KeyNode({
   );
 }
 
+function EditableKeyNode({
+  value,
+  onChange,
+  isInvalid = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  isInvalid?: boolean;
+}) {
+  return (
+    <input
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder="--"
+      maxLength={3}
+      aria-label="Custom Open Key"
+      className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 text-center text-lg font-semibold uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${
+        isInvalid
+          ? "border-destructive text-destructive focus-visible:ring-destructive"
+          : "border-muted-foreground/50 text-muted-foreground focus-visible:border-primary focus-visible:text-foreground focus-visible:ring-ring border-dashed"
+      }`}
+    />
+  );
+}
+
 const flowChipClasses = (type: HarmonicRuleType) =>
   type === "impact"
     ? "bg-energy-impact/20 text-energy-impact"
@@ -62,8 +88,8 @@ const moodStyles: Record<HarmonicMood, string> = {
   happier: "bg-key-major/20 text-key-major",
 };
 
-const capitalize = (value: string) =>
-  value.slice(0, 1).toUpperCase() + value.slice(1);
+const capitalize = (value?: string) =>
+  value ? value.slice(0, 1).toUpperCase() + value.slice(1) : "";
 
 type MixSuggestion = HarmonicSuggestion & {
   keyLabel: string;
@@ -76,6 +102,10 @@ export default function Mix() {
     useOutletContext<AppLayoutContext>();
   const mix = mixes.find((entry) => entry.id === id);
   const [selectedTrackId, setSelectedTrackId] = React.useState<string | null>(
+    null,
+  );
+  const [customKeyValue, setCustomKeyValue] = React.useState("");
+  const [customKeyError, setCustomKeyError] = React.useState<string | null>(
     null,
   );
 
@@ -99,6 +129,19 @@ export default function Mix() {
   const handleTrackDetailsChange = (trackId: string, value: string) => {
     if (!mix) return;
     updateTrack(mix.id, trackId, { details: value });
+  };
+
+  const handleCustomKeySubmit = (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (!mix) return;
+    const parsed = openKeyFromString(customKeyValue);
+    if (!parsed) {
+      setCustomKeyError("Wrong format");
+      return;
+    }
+    setCustomKeyError(null);
+    addKeyToMix(mix.id, parsed);
+    setCustomKeyValue("");
   };
 
   const trackSignature = mix?.tracks.map((track) => track.id).join("|") ?? "";
@@ -144,6 +187,11 @@ export default function Mix() {
       return mix.tracks[0]?.id ?? null;
     });
   }, [mix?.id, trackSignature]);
+
+  React.useEffect(() => {
+    setCustomKeyValue("");
+    setCustomKeyError(null);
+  }, [mix?.id]);
 
   if (!mix) {
     return (
@@ -197,7 +245,7 @@ export default function Mix() {
         <div>
           <div className="relative">
             {trackTransitions.map(({ track, rule }, index) => {
-              const ruleType = rule?.type ?? "smooth";
+              const ruleType = rule?.type;
               const ruleMood = rule?.mood;
               const isSelected = track.id === selectedTrackId;
               return (
@@ -222,16 +270,18 @@ export default function Mix() {
                       )}
                       {index > 0 && (
                         <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(ruleType)}`}
-                          >
-                            {ruleType === "impact" ? (
-                              <Flame className="h-3 w-3" />
-                            ) : (
-                              <Layers className="h-3 w-3" />
-                            )}
-                            {capitalize(ruleType)}
-                          </span>
+                          {ruleType && (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(ruleType)}`}
+                            >
+                              {ruleType === "impact" ? (
+                                <Flame className="h-3 w-3" />
+                              ) : (
+                                <Layers className="h-3 w-3" />
+                              )}
+                              {capitalize(ruleType)}
+                            </span>
+                          )}
                           {ruleMood && (
                             <span
                               className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[ruleMood]}`}
@@ -325,25 +375,64 @@ export default function Mix() {
                         <p className="font-medium">{suggestion.name}</p>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(suggestion.type)}`}
-                        >
-                          {suggestion.type === "impact" ? (
-                            <Flame className="h-3 w-3" />
-                          ) : (
-                            <Layers className="h-3 w-3" />
-                          )}
-                          {capitalize(suggestion.type)}
-                        </span>
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[suggestion.mood]}`}
-                        >
-                          {capitalize(suggestion.mood)}
-                        </span>
+                        {suggestion.type && (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(suggestion.type)}`}
+                          >
+                            {suggestion.type === "impact" ? (
+                              <Flame className="h-3 w-3" />
+                            ) : (
+                              <Layers className="h-3 w-3" />
+                            )}
+                            {capitalize(suggestion.type)}
+                          </span>
+                        )}
+                        {suggestion.mood && (
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[suggestion.mood]}`}
+                          >
+                            {capitalize(suggestion.mood)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
+                <form
+                  key={customHarmonicSuggestion.id}
+                  onSubmit={handleCustomKeySubmit}
+                  className="p-3 sm:col-start-2"
+                >
+                  <div className="flex items-center gap-4">
+                    <EditableKeyNode
+                      value={customKeyValue}
+                      onChange={(value) => {
+                        setCustomKeyValue(value);
+                        if (customKeyError) {
+                          setCustomKeyError(null);
+                        }
+                      }}
+                      isInvalid={Boolean(customKeyError)}
+                    />
+                    <div className="flex flex-1 flex-row justify-between">
+                      <div className="flex flex-col">
+                        <p className="font-medium">
+                          {customHarmonicSuggestion.name}
+                        </p>
+                        {customKeyError && (
+                          <p className="text-destructive text-xs">
+                            {customKeyError}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button type="submit" size="sm">
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
               </div>
             )}
           </CardContent>

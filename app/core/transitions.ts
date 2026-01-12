@@ -141,3 +141,19 @@ const ruleMap: Record<HarmonicRule, HarmonicRuleDefinition> =
 export function getHarmonicRule(id: HarmonicRule) {
   return ruleMap[id];
 }
+
+// Exception: the UI allows a "custom" entry that bypasses rule transforms.
+export const CUSTOM_HARMONIC_RULE_ID = "custom" as const;
+export type CustomHarmonicRule = typeof CUSTOM_HARMONIC_RULE_ID;
+
+export type CustomHarmonicSuggestion = {
+  id: CustomHarmonicRule;
+  name: string;
+  description: string;
+};
+
+export const customHarmonicSuggestion: CustomHarmonicSuggestion = {
+  id: CUSTOM_HARMONIC_RULE_ID,
+  name: "Custom",
+  description: "Enter Camelot/Open Key notation such as 8m or 11d.",
+};
