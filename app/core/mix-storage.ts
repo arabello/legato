@@ -1,48 +1,37 @@
 import {
-  matchHarmonicRule,
-  type HarmonicMood,
-  type HarmonicRuleDefinition,
-  type HarmonicRuleType,
-} from "./rules";
+  formatOpenKey,
+  isOpenKey,
+  openKeyFromString,
+  type OpenKey,
+} from "./openKey";
+import { matchHarmonicRule, type HarmonicRuleDefinition } from "./rules";
 
 const STORAGE_KEY = "legato.mixes";
 
-export type EnergyLevel = "smooth" | "impact" | "tension";
-
 export type MixTrack = {
   id: string;
-  key: string;
+  key: OpenKey;
   title: string;
   details: string;
-  relationship?: string;
-  energy?: EnergyLevel;
-  label?: string;
-  ruleType?: HarmonicRuleType;
-  mood?: HarmonicMood;
 };
 
 export type Mix = {
   id: string;
   name: string;
-  startKey: string;
+  startKey: OpenKey;
   tracks: MixTrack[];
   createdAt: number;
 };
 
 export type CreateMixOptions = {
   name?: string;
-  keys?: string[];
+  keys?: Array<string | OpenKey>;
 };
 
-export type TrackMeta = {
-  relationship?: string;
-  label?: string;
-  energy?: EnergyLevel;
-  ruleType?: HarmonicRuleType;
-  mood?: HarmonicMood;
+const DEFAULT_KEY: OpenKey = openKeyFromString("8a") ?? {
+  letter: "m",
+  number: 8,
 };
-
-const DEFAULT_KEY = "8A";
 
 function generateId(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -51,48 +40,37 @@ function generateId(prefix: string) {
   return `${prefix}-${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
 }
 
-const moodLabels: Record<HarmonicMood, string> = {
-  neutral: "Neutral",
-  tension: "Tension",
-  moodier: "Moodier",
-  happier: "Happier",
-};
-
-const ruleToEnergy = (rule?: HarmonicRuleDefinition): EnergyLevel => {
-  if (!rule) return "smooth";
-  if (rule.mood === "tension") return "tension";
-  return rule.type === "impact" ? "impact" : "smooth";
-};
-
-const ruleLabel = (rule?: HarmonicRuleDefinition) =>
-  rule ? moodLabels[rule.mood] : undefined;
-
-const DEFAULT_TRANSITION = {
-  relationship: "Start",
-  energy: "smooth" as EnergyLevel,
-  ruleType: "smooth" as HarmonicRuleType,
-  mood: "neutral" as HarmonicMood,
-  label: moodLabels.neutral,
-};
-
-function describeTransition(previousKey: string | undefined, nextKey: string) {
+export function describeTransition(
+  previousKey: OpenKey | undefined,
+  nextKey: OpenKey,
+): HarmonicRuleDefinition | undefined {
   if (!previousKey) {
-    return DEFAULT_TRANSITION;
+    return undefined;
   }
 
-  const rule = matchHarmonicRule(previousKey, nextKey);
-  return {
-    relationship: rule?.name || "Suggested transition",
-    energy: ruleToEnergy(rule),
-    ruleType: rule?.type ?? "smooth",
-    mood: rule?.mood,
-    label: ruleLabel(rule),
-  };
+  const fromKey = formatOpenKey(previousKey);
+  const toKey = formatOpenKey(nextKey);
+  return matchHarmonicRule(fromKey, toKey);
 }
 
-function normalizeKeys(keys?: string[]) {
+function normalizeKey(value?: string | OpenKey): OpenKey {
+  if (value && typeof value === "object" && isOpenKey(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = openKeyFromString(value);
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  return DEFAULT_KEY;
+}
+
+function normalizeKeys(keys?: Array<string | OpenKey>) {
   if (keys && keys.length > 0) {
-    return keys;
+    return keys.map((entry) => normalizeKey(entry));
   }
   return [DEFAULT_KEY];
 }
@@ -106,48 +84,32 @@ export function createMixRecord(options?: CreateMixOptions): Mix {
     name: options?.name?.trim() || "Untitled Mix",
     startKey: keys[0],
     createdAt,
-    tracks: keys.map((key, index, list) => {
-      const previousKey = list[index - 1];
-      const transition = describeTransition(previousKey, key);
-
-      return {
-        id: generateId("track"),
-        key,
-        title: index === 0 ? "Opening Track" : "",
-        details: "",
-        relationship: transition.relationship,
-        energy: transition.energy,
-        label: transition.label,
-        ruleType: transition.ruleType,
-        mood: transition.mood,
-      };
-    }),
+    tracks: keys.map((key, index) => ({
+      id: generateId("track"),
+      key,
+      title: index === 0 ? "Opening Track" : "",
+      details: "",
+    })),
   };
 }
 
-export function appendTrack(mix: Mix, key: string, meta?: TrackMeta): Mix {
-  const previousKey = mix.tracks.at(-1)?.key;
-  const transition = describeTransition(previousKey, key);
-
+export function appendTrack(mix: Mix, key: OpenKey): Mix {
   const nextTrack: MixTrack = {
     id: generateId("track"),
     key,
     title: "",
     details: "",
-    relationship: meta?.relationship || transition.relationship,
-    energy: meta?.energy ?? transition.energy,
-    label: meta?.label ?? transition.label,
-    ruleType: meta?.ruleType ?? transition.ruleType,
-    mood: meta?.mood ?? transition.mood,
   };
 
   return { ...mix, tracks: [...mix.tracks, nextTrack] };
 }
 
-function normalizeTrack(
-  track: Partial<MixTrack> & { bpm?: unknown },
-  index: number,
-): MixTrack {
+type StoredTrack = Partial<Omit<MixTrack, "key">> & {
+  key?: MixTrack["key"] | string;
+  bpm?: unknown;
+};
+
+function normalizeTrack(track: StoredTrack, index: number): MixTrack {
   const fallbackTitle = index === 0 ? "Opening Track" : "";
   let details = track.details ?? "";
   if (!details && typeof track.bpm !== "undefined") {
@@ -156,17 +118,12 @@ function normalizeTrack(
 
   return {
     id: track.id || generateId("track"),
-    key: track.key || DEFAULT_KEY,
+    key: normalizeKey(track.key),
     title:
       typeof track.title === "string" && track.title.length > 0
         ? track.title
         : fallbackTitle,
     details,
-    relationship: track.relationship,
-    energy: track.energy as EnergyLevel | undefined,
-    label: track.label,
-    ruleType: track.ruleType as HarmonicRuleType | undefined,
-    mood: track.mood as HarmonicMood | undefined,
   };
 }
 
@@ -175,16 +132,6 @@ function normalizeMix(mix: Partial<Mix>): Mix {
   if (Array.isArray(mix.tracks)) {
     mix.tracks.forEach((track, index) => {
       const normalized = normalizeTrack(track, index);
-      const previous = tracks[index - 1];
-
-      const transition = describeTransition(previous?.key, normalized.key);
-      normalized.relationship =
-        normalized.relationship || transition.relationship;
-      normalized.energy = normalized.energy ?? transition.energy;
-      normalized.ruleType = normalized.ruleType ?? transition.ruleType;
-      normalized.mood = normalized.mood ?? transition.mood;
-      normalized.label = normalized.label || transition.label;
-
       tracks.push(normalized);
     });
   }
@@ -195,7 +142,7 @@ function normalizeMix(mix: Partial<Mix>): Mix {
       typeof mix.name === "string" && mix.name.trim().length > 0
         ? mix.name
         : "Untitled Mix",
-    startKey: mix.startKey || tracks[0]?.key || DEFAULT_KEY,
+    startKey: normalizeKey(mix.startKey ?? tracks[0]?.key),
     createdAt: mix.createdAt || Date.now(),
     tracks,
   };

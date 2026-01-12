@@ -1,18 +1,20 @@
+import { Flame, Layers, Plus } from "lucide-react";
 import * as React from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router";
-import { Plus, Layers, Flame, Zap } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import type { Route } from "./+types/mix";
-import type { AppLayoutContext } from "./layout";
-import type { EnergyLevel } from "~/core/mix-storage";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { describeTransition, type MixTrack } from "~/core/mix-storage";
+import { formatOpenKey, openKeyFromString } from "~/core/openKey";
 import {
   getHarmonicSuggestions,
+  projectHarmonicSuggestion,
   type HarmonicMood,
+  type HarmonicRuleDefinition,
   type HarmonicRuleType,
   type HarmonicSuggestion,
 } from "~/core/rules";
+import type { Route } from "./+types/mix";
+import type { AppLayoutContext } from "./layout";
 
 export function meta({ params }: Route.MetaArgs) {
   return [
@@ -48,23 +50,6 @@ function KeyNode({
   );
 }
 
-function EnergyIndicator({ energy }: { energy: EnergyLevel }) {
-  const config = {
-    smooth: { icon: Layers, color: "text-energy-smooth", label: "Maintains" },
-    impact: { icon: Flame, color: "text-energy-impact", label: "Boosts" },
-    tension: { icon: Zap, color: "text-energy-tension", label: "Tension" },
-  };
-
-  const { icon: Icon, color, label } = config[energy];
-
-  return (
-    <div className={`flex items-center gap-1 text-sm ${color}`}>
-      <Icon className="h-3 w-3" />
-      {label}
-    </div>
-  );
-}
-
 const flowChipClasses = (type: HarmonicRuleType) =>
   type === "impact"
     ? "bg-energy-impact/20 text-energy-impact"
@@ -80,11 +65,8 @@ const moodStyles: Record<HarmonicMood, string> = {
 const capitalize = (value: string) =>
   value.slice(0, 1).toUpperCase() + value.slice(1);
 
-const suggestionEnergy = (suggestion: HarmonicSuggestion): EnergyLevel => {
-  if (suggestion.mood === "tension") {
-    return "tension";
-  }
-  return suggestion.type === "impact" ? "impact" : "smooth";
+type MixSuggestion = HarmonicSuggestion & {
+  keyLabel: string;
 };
 
 export default function Mix() {
@@ -97,15 +79,11 @@ export default function Mix() {
     null,
   );
 
-  const handleSuggestedKeyClick = (suggestion: HarmonicSuggestion) => {
+  const handleSuggestedKeyClick = (suggestion: MixSuggestion) => {
     if (!mix) return;
-    addKeyToMix(mix.id, suggestion.key, {
-      relationship: suggestion.name,
-      label: capitalize(suggestion.mood),
-      energy: suggestionEnergy(suggestion),
-      ruleType: suggestion.type,
-      mood: suggestion.mood,
-    });
+    const nextKey = openKeyFromString(suggestion.keyLabel);
+    if (!nextKey) return;
+    addKeyToMix(mix.id, nextKey);
   };
 
   const handleMixNameChange = (value: string) => {
@@ -122,6 +100,50 @@ export default function Mix() {
     if (!mix) return;
     updateTrack(mix.id, trackId, { details: value });
   };
+
+  const trackSignature = mix?.tracks.map((track) => track.id).join("|") ?? "";
+  const anchorOpenKey =
+    mix?.tracks[mix.tracks.length - 1]?.key || mix?.startKey;
+  const anchorKey = anchorOpenKey ? formatOpenKey(anchorOpenKey) : "1m";
+
+  const harmonicSuggestions = React.useMemo<MixSuggestion[]>(() => {
+    return getHarmonicSuggestions(anchorKey)
+      .map((suggestion) => {
+        const keyLabel = projectHarmonicSuggestion(anchorKey, suggestion.id);
+        if (!keyLabel) return null;
+        return { ...suggestion, keyLabel };
+      })
+      .filter((suggestion): suggestion is MixSuggestion => suggestion !== null);
+  }, [anchorKey]);
+
+  const trackTransitions = React.useMemo<
+    Array<{ track: MixTrack; rule?: HarmonicRuleDefinition }>
+  >(() => {
+    if (!mix) {
+      return [];
+    }
+    return mix.tracks.map((track, index) => {
+      const previousKey = mix.tracks[index - 1]?.key;
+      return {
+        track,
+        rule: describeTransition(previousKey, track.key),
+      };
+    });
+  }, [mix, trackSignature]);
+
+  React.useEffect(() => {
+    if (!mix) {
+      setSelectedTrackId(null);
+      return;
+    }
+
+    setSelectedTrackId((current) => {
+      if (current && mix.tracks.some((track) => track.id === current)) {
+        return current;
+      }
+      return mix.tracks[0]?.id ?? null;
+    });
+  }, [mix?.id, trackSignature]);
 
   if (!mix) {
     return (
@@ -150,22 +172,8 @@ export default function Mix() {
     );
   }
 
-  const anchorKey =
-    mix.tracks[mix.tracks.length - 1]?.key || mix.startKey || "1m";
-  const harmonicSuggestions = getHarmonicSuggestions(anchorKey);
-  const trackSignature = mix.tracks.map((track) => track.id).join("|");
-
-  React.useEffect(() => {
-    setSelectedTrackId((current) => {
-      if (current && mix.tracks.some((track) => track.id === current)) {
-        return current;
-      }
-      return mix.tracks[0]?.id ?? null;
-    });
-  }, [mix.id, trackSignature]);
-
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col items-center">
       {/* Main Timeline Area */}
       <div className="scrollbar-hide flex-1 overflow-auto p-8">
         {/* Header */}
@@ -186,9 +194,11 @@ export default function Mix() {
         </div>
 
         {/* Track Timeline */}
-        <div className="mx-auto max-w-md">
+        <div>
           <div className="relative">
-            {mix.tracks.map((track, index) => {
+            {trackTransitions.map(({ track, rule }, index) => {
+              const ruleType = rule?.type ?? "smooth";
+              const ruleMood = rule?.mood;
               const isSelected = track.id === selectedTrackId;
               return (
                 <div
@@ -204,45 +214,40 @@ export default function Mix() {
                   {/* Track Node */}
                   <div className="flex items-center gap-6 py-4">
                     {/* Left side - Relationship info */}
-                    <div className="flex w-32 flex-col items-end text-right">
-                      {index > 0 && track.label && (
-                        <Badge
-                          variant="outline"
-                          className="border-muted-foreground/30 mb-1 text-xs"
-                        >
-                          {track.label}
-                        </Badge>
+                    <div className="flex w-32 flex-col items-end gap-4 text-right">
+                      {rule && (
+                        <span className="text-muted-foreground text-sm">
+                          {rule.name}
+                        </span>
                       )}
-                      {(index > 0 || track.relationship) && (
-                        <>
-                          <span className="text-muted-foreground text-sm">
-                            {track.relationship}
-                          </span>
-                          {index > 0 && (
-                            <EnergyIndicator
-                              energy={track.energy ?? "smooth"}
-                            />
-                          )}
-                        </>
-                      )}
-                      {index > 0 && track.ruleType && (
-                        <div className="mt-2 flex flex-wrap justify-end">
+                      {index > 0 && (
+                        <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(track.ruleType)}`}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(ruleType)}`}
                           >
-                            {track.ruleType === "impact" ? (
+                            {ruleType === "impact" ? (
                               <Flame className="h-3 w-3" />
                             ) : (
                               <Layers className="h-3 w-3" />
                             )}
-                            {capitalize(track.ruleType)}
+                            {capitalize(ruleType)}
                           </span>
+                          {ruleMood && (
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[ruleMood]}`}
+                            >
+                              {capitalize(ruleMood)}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
 
                     {/* Key Node */}
-                    <KeyNode keyName={track.key} isActive={isSelected} />
+                    <KeyNode
+                      keyName={formatOpenKey(track.key)}
+                      isActive={isSelected}
+                    />
 
                     {/* Right side - Track info */}
                     <div className="w-48">
@@ -299,88 +304,50 @@ export default function Mix() {
               <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                 Suggested Next Keys
               </CardTitle>
-              <span className="text-muted-foreground text-sm">
-                Based on {anchorKey}
-              </span>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             {harmonicSuggestions.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 Unable to analyze key {anchorKey}. Try selecting another track.
               </p>
             ) : (
-              harmonicSuggestions.map((suggestion) => (
-                <div
-                  key={`${suggestion.id}-${suggestion.key}`}
-                  className="hover:bg-secondary flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-colors"
-                  onClick={() => handleSuggestedKeyClick(suggestion)}
-                >
-                  <KeyNode keyName={suggestion.key} size="sm" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium">{suggestion.name}</p>
-                      <span className="text-muted-foreground text-xs">
-                        {anchorKey} → {suggestion.key}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(suggestion.type)}`}
-                      >
-                        {suggestion.type === "impact" ? (
-                          <Flame className="h-3 w-3" />
-                        ) : (
-                          <Layers className="h-3 w-3" />
-                        )}
-                        {capitalize(suggestion.type)}
-                      </span>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[suggestion.mood]}`}
-                      >
-                        {capitalize(suggestion.mood)}
-                      </span>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {harmonicSuggestions.map((suggestion) => (
+                  <div
+                    key={`${suggestion.id}-${suggestion.keyLabel}`}
+                    className="hover:bg-secondary flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-colors"
+                    onClick={() => handleSuggestedKeyClick(suggestion)}
+                  >
+                    <KeyNode keyName={suggestion.keyLabel} size="sm" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">{suggestion.name}</p>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(suggestion.type)}`}
+                        >
+                          {suggestion.type === "impact" ? (
+                            <Flame className="h-3 w-3" />
+                          ) : (
+                            <Layers className="h-3 w-3" />
+                          )}
+                          {capitalize(suggestion.type)}
+                        </span>
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[suggestion.mood]}`}
+                        >
+                          {capitalize(suggestion.mood)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Energy Legend Panel */}
-      <div className="border-border w-64 border-l p-6">
-        <h3 className="text-muted-foreground mb-4 text-sm font-medium tracking-wider uppercase">
-          Energy Legend
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="text-energy-smooth h-4 w-4" />
-              <span className="text-sm">Smooth</span>
-            </div>
-            <span className="text-muted-foreground text-xs">
-              Maintains energy
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Flame className="text-energy-impact h-4 w-4" />
-              <span className="text-sm">Impact</span>
-            </div>
-            <span className="text-muted-foreground text-xs">Boosts energy</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="text-energy-tension h-4 w-4" />
-              <span className="text-sm">Tension</span>
-            </div>
-            <span className="text-muted-foreground text-xs">
-              Creates dissonance
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );

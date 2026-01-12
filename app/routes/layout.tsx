@@ -23,14 +23,14 @@ import {
   updateTrackInfo,
   type CreateMixOptions,
   type Mix,
-  type TrackMeta,
 } from "~/core/mix-storage";
+import { formatOpenKey, type OpenKey } from "~/core/openKey";
 
 export type AppLayoutContext = {
   mixes: Mix[];
   createMix: (options?: CreateMixOptions) => Mix;
   deleteMix: (mixId: string) => void;
-  addKeyToMix: (mixId: string, key: string, meta?: TrackMeta) => void;
+  addKeyToMix: (mixId: string, key: OpenKey) => void;
   updateMixName: (mixId: string, name: string) => void;
   updateTrack: (
     mixId: string,
@@ -77,16 +77,11 @@ export default function AppLayout() {
     [location.pathname, navigate],
   );
 
-  const addKeyToMix = React.useCallback(
-    (mixId: string, key: string, meta?: TrackMeta) => {
-      setMixes((prev) =>
-        prev.map((mix) =>
-          mix.id === mixId ? appendTrack(mix, key, meta) : mix,
-        ),
-      );
-    },
-    [],
-  );
+  const addKeyToMix = React.useCallback((mixId: string, key: OpenKey) => {
+    setMixes((prev) =>
+      prev.map((mix) => (mix.id === mixId ? appendTrack(mix, key) : mix)),
+    );
+  }, []);
 
   const updateMixName = React.useCallback((mixId: string, name: string) => {
     setMixes((prev) =>
@@ -217,7 +212,9 @@ export default function AppLayout() {
                           )}
                         </div>
                         <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
-                          <span className="text-primary">{mix.startKey}</span>
+                          <span className="text-primary">
+                            {formatOpenKey(mix.startKey)}
+                          </span>
                           <span>•</span>
                           <span className="truncate">
                             {mix.tracks[0]?.details || "Add notes"}
