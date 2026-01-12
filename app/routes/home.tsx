@@ -2,6 +2,7 @@ import { useNavigate, useOutletContext } from "react-router";
 import { Plus, TrendingUp, Zap, Music, Waves } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
+import { getKeyColor } from "~/core/key-colors";
 import type { Route } from "./+types/home";
 import type { AppLayoutContext } from "./layout";
 
@@ -17,52 +18,57 @@ export function meta({}: Route.MetaArgs) {
 
 const templates = [
   {
-    id: "smooth-transition",
-    name: "Smooth Transition",
-    description: "Gradual energy build-up over 1 hour",
+    id: "adjacent-flow",
+    name: "Adjacent Flow",
+    description:
+      "Ride clockwise neighbors (±1) for butter-smooth phrasing and steady tension.",
     icon: TrendingUp,
-    keys: ["7m", "8d", "5m", "6d"],
+    keys: ["7m", "8m", "9m", "10m"],
+    moreCount: 8,
+    popular: true,
+  },
+  {
+    id: "relative-lift",
+    name: "Relative Mood Lift",
+    description:
+      "Alternate minor ↔ relative major (same number) to brighten vocals without clashes.",
+    icon: Waves,
+    keys: ["8m", "8d", "9d", "9m"],
+    moreCount: 6,
+    popular: false,
+  },
+  {
+    id: "energy-boost",
+    name: "Energy Boost",
+    description:
+      "Use +7/+2 jumps for semitone cross-wheel spikes—perfect for peak-time drops.",
+    icon: Zap,
+    keys: ["8m", "3m", "10m", "5m"],
     moreCount: 4,
     popular: false,
   },
   {
-    id: "high-energy",
-    name: "High Energy",
-    description: "Peak time bangers and rapid mixing",
-    icon: Zap,
-    keys: ["4A", "5A", "6A", "7A"],
-    moreCount: 8,
-    popular: false,
-  },
-  {
-    id: "camelot-circle",
-    name: "Camelot Circle",
-    description: "Harmonic journey through all keys",
+    id: "tension-release",
+    name: "Tension & Release",
+    description:
+      "Creep through minors, then resolve into parallel/relative majors for payoff.",
     icon: Music,
-    keys: ["1A", "2A", "3A", "4A"],
-    moreCount: 20,
-    popular: true,
-  },
-  {
-    id: "deep-dive",
-    name: "Deep Dive",
-    description: "Hypnotic rhythms and minor keys",
-    icon: Waves,
-    keys: ["9m", "10m", "11m", "12m"],
-    moreCount: 6,
+    keys: ["9m", "10m", "10d", "9d"],
+    moreCount: 5,
     popular: false,
   },
 ];
 
 function KeyBadge({ keyName }: { keyName: string }) {
-  const isMinor = keyName.toLowerCase().endsWith("m");
+  const color = getKeyColor(keyName);
   return (
     <span
-      className={`inline-flex h-6 min-w-6 items-center justify-center rounded-md px-1.5 text-xs font-medium ${
-        isMinor
-          ? "bg-key-minor/20 text-key-minor"
-          : "bg-key-major/20 text-key-major"
-      }`}
+      className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-2 text-xs font-semibold"
+      style={{
+        borderColor: color,
+        color,
+        backgroundColor: `${color}1a`,
+      }}
     >
       {keyName}
     </span>
