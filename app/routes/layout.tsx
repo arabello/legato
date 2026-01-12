@@ -29,6 +29,7 @@ import { formatOpenKey, type OpenKey } from "~/core/openKey";
 
 export type AppLayoutContext = {
   mixes: Mix[];
+  hydrated: boolean;
   createMix: (options?: CreateMixOptions) => Mix;
   deleteMix: (mixId: string) => void;
   addKeyToMix: (mixId: string, key: OpenKey) => void;
@@ -117,6 +118,7 @@ export default function AppLayout() {
   const contextValue = React.useMemo<AppLayoutContext>(
     () => ({
       mixes,
+      hydrated,
       createMix,
       deleteMix,
       addKeyToMix,
@@ -126,6 +128,7 @@ export default function AppLayout() {
     }),
     [
       mixes,
+      hydrated,
       createMix,
       deleteMix,
       addKeyToMix,

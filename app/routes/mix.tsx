@@ -1,6 +1,12 @@
-import { Flame, Layers, MinusIcon, Plus, Trash2 } from "lucide-react";
+import { Flame, Layers, MinusIcon, Plus, Trash2, Share2 } from "lucide-react";
 import * as React from "react";
-import { Link, useNavigate, useOutletContext, useParams } from "react-router";
+import {
+  Link,
+  useNavigate,
+  useOutletContext,
+  useParams,
+  useSearchParams,
+} from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import {
@@ -21,6 +27,7 @@ import {
   generateAllRootKeys,
   type OpenKey,
 } from "~/core/openKey";
+import { decodeMixSharePayload, encodeMixSharePayload } from "~/core/mix-share";
 import {
   customHarmonicSuggestion,
   getHarmonicSuggestions,
@@ -138,14 +145,17 @@ type MixSuggestion = HarmonicSuggestion & {
 export default function Mix() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     mixes,
+    hydrated,
     addKeyToMix,
     createMix,
     updateMixName,
     updateTrack,
     removeTrack,
   } = useOutletContext<AppLayoutContext>();
+  const shareParam = searchParams.get("share");
   const mix = mixes.find((entry) => entry.id === id);
   const [selectedTrackId, setSelectedTrackId] = React.useState<string | null>(
     null,
@@ -155,6 +165,11 @@ export default function Mix() {
     null,
   );
   const rootKeyOptions = React.useMemo(() => generateAllRootKeys(), []);
+  const shareHandledRef = React.useRef(false);
+  const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
+  const [copyState, setCopyState] = React.useState<"idle" | "copied" | "error">(
+    "idle",
+  );
 
   const handleSuggestedKeyClick = (suggestion: MixSuggestion) => {
     if (!mix) return;
@@ -251,6 +266,93 @@ export default function Mix() {
     setCustomKeyError(null);
   }, [mix?.id]);
 
+  const shareLink = React.useMemo(() => {
+    if (!mix || typeof window === "undefined") {
+      return "";
+    }
+    const encoded = encodeMixSharePayload(mix);
+    const url = new URL(window.location.origin + `/mix/${mix.id}`);
+    url.searchParams.set("share", encoded);
+    return url.toString();
+  }, [mix]);
+
+  React.useEffect(() => {
+    if (shareHandledRef.current) return;
+    if (!hydrated) return;
+    if (!shareParam) return;
+
+    shareHandledRef.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("share");
+    setSearchParams(next, { replace: true });
+
+    const payload = decodeMixSharePayload(shareParam);
+    if (!payload) {
+      return;
+    }
+
+    const newMix = createMix({
+      name: payload.name ?? "Shared Mix",
+      keys:
+        payload.tracks.length > 0
+          ? payload.tracks.map((track) => track.key)
+          : undefined,
+    });
+
+    if (payload.tracks.length > 0) {
+      payload.tracks.forEach((track, index) => {
+        const trackId = newMix.tracks[index]?.id;
+        if (trackId) {
+          updateTrack(newMix.id, trackId, {
+            title: track.title,
+            details: track.details,
+          });
+        }
+      });
+    }
+
+    navigate(`/mix/${newMix.id}`, { replace: true });
+  }, [
+    hydrated,
+    shareParam,
+    createMix,
+    updateTrack,
+    navigate,
+    searchParams,
+    setSearchParams,
+  ]);
+
+  const handleShareDialogChange = (open: boolean) => {
+    setShareDialogOpen(open);
+    if (!open) {
+      setCopyState("idle");
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    if (!shareLink) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareLink);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = shareLink;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 2000);
+    } catch (error) {
+      console.error("Failed to copy share link", error);
+      setCopyState("error");
+    }
+  };
+
   if (!mix) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
@@ -283,8 +385,8 @@ export default function Mix() {
       {/* Main Timeline Area */}
       <div className="scrollbar-hide flex-1 overflow-auto p-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="text-center">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div className="flex-1 text-center">
             <input
               value={mix.name}
               onChange={(event) => handleMixNameChange(event.target.value)}
@@ -297,6 +399,47 @@ export default function Mix() {
               placeholder="Untitled Mix"
             />
           </div>
+          <AlertDialog
+            open={shareDialogOpen}
+            onOpenChange={handleShareDialogChange}
+          >
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                type="button"
+                title="Share mix"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="sr-only">Share mix</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Share this mix</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Copy a link that recreates this timeline on another device.
+                  Anyone opening it will get their own copy of these tracks.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {copyState === "error" && (
+                <p className="text-destructive text-sm">
+                  Failed to copy the link automatically. Please copy it
+                  manually.
+                </p>
+              )}
+              <AlertDialogFooter>
+                <AlertDialogCancel type="button">Close</AlertDialogCancel>
+                <Button
+                  type="button"
+                  onClick={handleCopyShareLink}
+                  disabled={!shareLink}
+                >
+                  {copyState === "copied" ? "Copied!" : "Copy Link"}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {/* Track Timeline */}
