@@ -18,6 +18,7 @@ import {
   appendTrack,
   createMixRecord,
   loadMixes,
+  removeTrack as removeTrackFromMix,
   saveMixes,
   renameMix,
   updateTrackInfo,
@@ -37,6 +38,7 @@ export type AppLayoutContext = {
     trackId: string,
     updates: Parameters<typeof updateTrackInfo>[2],
   ) => void;
+  removeTrack: (mixId: string, trackId: string) => void;
 };
 
 export default function AppLayout() {
@@ -104,6 +106,14 @@ export default function AppLayout() {
     [],
   );
 
+  const removeTrack = React.useCallback((mixId: string, trackId: string) => {
+    setMixes((prev) =>
+      prev.map((mix) =>
+        mix.id === mixId ? removeTrackFromMix(mix, trackId) : mix,
+      ),
+    );
+  }, []);
+
   const contextValue = React.useMemo<AppLayoutContext>(
     () => ({
       mixes,
@@ -112,8 +122,17 @@ export default function AppLayout() {
       addKeyToMix,
       updateMixName,
       updateTrack,
+      removeTrack,
     }),
-    [mixes, createMix, deleteMix, addKeyToMix, updateMixName, updateTrack],
+    [
+      mixes,
+      createMix,
+      deleteMix,
+      addKeyToMix,
+      updateMixName,
+      updateTrack,
+      removeTrack,
+    ],
   );
 
   const handleCreateMix = React.useCallback(() => {

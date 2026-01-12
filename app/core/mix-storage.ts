@@ -197,3 +197,11 @@ export function updateTrackInfo(
     ),
   };
 }
+
+export function removeTrack(mix: Mix, trackId: string): Mix {
+  const nextTracks = mix.tracks.filter((track) => track.id !== trackId);
+  if (nextTracks.length === mix.tracks.length) {
+    return mix;
+  }
+  return { ...mix, tracks: nextTracks };
+}

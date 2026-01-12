@@ -1,8 +1,19 @@
-import { ChevronDownIcon, Flame, Layers, MinusIcon, Plus } from "lucide-react";
+import { Flame, Layers, MinusIcon, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "~/components/ui/alert-dialog";
 import { describeTransition, type MixTrack } from "~/core/mix-storage";
 import { formatOpenKey, openKeyFromString } from "~/core/openKey";
 import {
@@ -122,8 +133,14 @@ type MixSuggestion = HarmonicSuggestion & {
 export default function Mix() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { mixes, addKeyToMix, createMix, updateMixName, updateTrack } =
-    useOutletContext<AppLayoutContext>();
+  const {
+    mixes,
+    addKeyToMix,
+    createMix,
+    updateMixName,
+    updateTrack,
+    removeTrack,
+  } = useOutletContext<AppLayoutContext>();
   const mix = mixes.find((entry) => entry.id === id);
   const [selectedTrackId, setSelectedTrackId] = React.useState<string | null>(
     null,
@@ -153,6 +170,11 @@ export default function Mix() {
   const handleTrackDetailsChange = (trackId: string, value: string) => {
     if (!mix) return;
     updateTrack(mix.id, trackId, { details: value });
+  };
+
+  const handleRemoveTrack = (trackId: string) => {
+    if (!mix) return;
+    removeTrack(mix.id, trackId);
   };
 
   const handleCustomKeySubmit = (event?: React.FormEvent<HTMLFormElement>) => {
@@ -271,11 +293,11 @@ export default function Mix() {
             const ruleType = rule?.type;
             const ruleMood = rule?.mood;
             const isSelected = track.id === selectedTrackId;
+            const isLastTrack = index === mix.tracks.length - 1;
             return (
-              <>
+              <React.Fragment key={track.id}>
                 <div
-                  key={track.id}
-                  className="relative"
+                  className="group relative"
                   onClick={() => setSelectedTrackId(track.id)}
                 >
                   {/* Track Node */}
@@ -313,53 +335,93 @@ export default function Mix() {
                     </div>
 
                     {/* Key Node */}
-                    <KeyNode keyName={formatOpenKey(track.key)} />
+                    <KeyNode
+                      keyName={formatOpenKey(track.key)}
+                      isActive={isSelected}
+                    />
 
                     {/* Right side - Track info */}
-                    <div className="w-48">
-                      <input
-                        value={track.title ?? ""}
-                        onChange={(event) =>
-                          handleTrackTitleChange(track.id, event.target.value)
-                        }
-                        placeholder="Add track title..."
-                        className="font-medium outline-none focus-visible:ring-0"
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            event.currentTarget.blur();
+                    <div className="flex items-start gap-3">
+                      <div className="w-48">
+                        <input
+                          value={track.title ?? ""}
+                          onChange={(event) =>
+                            handleTrackTitleChange(track.id, event.target.value)
                           }
-                        }}
-                      />
-                      <input
-                        value={track.details || ""}
-                        onChange={(event) =>
-                          handleTrackDetailsChange(track.id, event.target.value)
-                        }
-                        placeholder="Add track BPM or notes"
-                        className="text-muted-foreground mt-1 w-full text-sm outline-none focus-visible:ring-0"
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            event.currentTarget.blur();
+                          placeholder="Add track title..."
+                          className="font-medium outline-none focus-visible:ring-0"
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.currentTarget.blur();
+                            }
+                          }}
+                        />
+                        <input
+                          value={track.details || ""}
+                          onChange={(event) =>
+                            handleTrackDetailsChange(
+                              track.id,
+                              event.target.value,
+                            )
                           }
-                        }}
-                      />
+                          placeholder="Add track BPM or notes"
+                          className="text-muted-foreground mt-1 w-full text-sm outline-none focus-visible:ring-0"
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.currentTarget.blur();
+                            }
+                          }}
+                        />
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Remove track</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Remove this track?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {isLastTrack
+                                ? "This will permanently remove the final track from your timeline."
+                                : "Removing this key will relink the harmonic rule between the surrounding tracks. The next track’s transition will refresh or disappear accordingly."}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => handleRemoveTrack(track.id)}
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </div>
                 {/* Separator */}
-                {
-                  <MinusIcon className="text-muted-foreground/30 h-4 w-4 -rotate-90" />
-                }
+                <MinusIcon className="text-muted-foreground/30 h-4 w-4 -rotate-90" />
 
                 {/* Add Track Button */}
-                {index === mix.tracks.length - 1 && (
+                {isLastTrack && (
                   <div className="mt-5 flex justify-center">
-                    <button className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105">
+                    <button className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full">
                       <Plus className="h-6 w-6" />
                     </button>
                   </div>
                 )}
-              </>
+              </React.Fragment>
             );
           })}
         </div>
