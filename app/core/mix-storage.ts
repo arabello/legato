@@ -72,7 +72,7 @@ function normalizeKeys(keys?: Array<string | OpenKey>) {
   if (keys && keys.length > 0) {
     return keys.map((entry) => normalizeKey(entry));
   }
-  return [DEFAULT_KEY];
+  return [];
 }
 
 export function createMixRecord(options?: CreateMixOptions): Mix {
@@ -82,7 +82,7 @@ export function createMixRecord(options?: CreateMixOptions): Mix {
   return {
     id: generateId("mix"),
     name: options?.name?.trim() || "Untitled Mix",
-    startKey: keys[0],
+    startKey: keys[0] ?? DEFAULT_KEY,
     createdAt,
     tracks: keys.map((key, index) => ({
       id: generateId("track"),
@@ -101,7 +101,13 @@ export function appendTrack(mix: Mix, key: OpenKey): Mix {
     details: "",
   };
 
-  return { ...mix, tracks: [...mix.tracks, nextTrack] };
+  const tracks = [...mix.tracks, nextTrack];
+
+  return {
+    ...mix,
+    startKey: mix.tracks.length === 0 ? key : mix.startKey,
+    tracks,
+  };
 }
 
 type StoredTrack = Partial<Omit<MixTrack, "key">> & {
@@ -199,9 +205,19 @@ export function updateTrackInfo(
 }
 
 export function removeTrack(mix: Mix, trackId: string): Mix {
-  const nextTracks = mix.tracks.filter((track) => track.id !== trackId);
-  if (nextTracks.length === mix.tracks.length) {
+  const removedIndex = mix.tracks.findIndex((track) => track.id === trackId);
+  if (removedIndex === -1) {
     return mix;
   }
-  return { ...mix, tracks: nextTracks };
+
+  const nextTracks = mix.tracks.filter((track) => track.id !== trackId);
+
+  let nextStartKey = mix.startKey;
+  if (nextTracks.length === 0) {
+    nextStartKey = DEFAULT_KEY;
+  } else if (removedIndex === 0) {
+    nextStartKey = nextTracks[0].key;
+  }
+
+  return { ...mix, startKey: nextStartKey, tracks: nextTracks };
 }

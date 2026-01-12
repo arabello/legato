@@ -15,7 +15,12 @@ import {
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
 import { describeTransition, type MixTrack } from "~/core/mix-storage";
-import { formatOpenKey, openKeyFromString } from "~/core/openKey";
+import {
+  formatOpenKey,
+  openKeyFromString,
+  generateAllRootKeys,
+  type OpenKey,
+} from "~/core/openKey";
 import {
   customHarmonicSuggestion,
   getHarmonicSuggestions,
@@ -149,6 +154,7 @@ export default function Mix() {
   const [customKeyError, setCustomKeyError] = React.useState<string | null>(
     null,
   );
+  const rootKeyOptions = React.useMemo(() => generateAllRootKeys(), []);
 
   const handleSuggestedKeyClick = (suggestion: MixSuggestion) => {
     if (!mix) return;
@@ -190,10 +196,16 @@ export default function Mix() {
     setCustomKeyValue("");
   };
 
+  const handleRootKeySelect = (key: OpenKey) => {
+    if (!mix) return;
+    addKeyToMix(mix.id, key);
+  };
+
   const trackSignature = mix?.tracks.map((track) => track.id).join("|") ?? "";
   const anchorOpenKey =
     mix?.tracks[mix.tracks.length - 1]?.key || mix?.startKey;
   const anchorKey = anchorOpenKey ? formatOpenKey(anchorOpenKey) : "1m";
+  const isTimelineEmpty = (mix?.tracks.length ?? 0) === 0;
 
   const harmonicSuggestions = React.useMemo<MixSuggestion[]>(() => {
     return getHarmonicSuggestions(anchorKey)
@@ -426,96 +438,124 @@ export default function Mix() {
           })}
         </div>
 
-        {/* Suggested Next Keys */}
-        <Card className="mx-auto mt-8 max-w-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        {isTimelineEmpty ? (
+          <Card className="mx-auto mt-8 max-w-xl">
+            <CardHeader>
+              <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
+                Starting Root Key
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                Choose a root key to seed your timeline. We&apos;ll add the
+                first track using the key you select below.
+              </p>
+              <div className="mt-4 flex flex-row flex-wrap gap-3">
+                {rootKeyOptions.map((keyOption) => (
+                  <button
+                    key={`${keyOption.number}${keyOption.letter}`}
+                    onClick={() => handleRootKeySelect(keyOption)}
+                    className="hover:cursor-pointer"
+                  >
+                    <KeyNode size="sm" keyName={formatOpenKey(keyOption)} />
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mx-auto mt-8 max-w-xl">
+            <CardHeader>
               <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                 Suggested Next Keys
               </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {harmonicSuggestions.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                Unable to analyze key {anchorKey}. Try selecting another track.
-              </p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {harmonicSuggestions.map((suggestion) => (
-                  <div
-                    key={`${suggestion.id}-${suggestion.keyLabel}`}
-                    className="hover:bg-secondary flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-colors"
-                    onClick={() => handleSuggestedKeyClick(suggestion)}
-                  >
-                    <KeyNode keyName={suggestion.keyLabel} size="sm" />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{suggestion.name}</p>
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {suggestion.type && (
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(suggestion.type)}`}
-                          >
-                            {suggestion.type === "impact" ? (
-                              <Flame className="h-3 w-3" />
-                            ) : (
-                              <Layers className="h-3 w-3" />
-                            )}
-                            {capitalize(suggestion.type)}
-                          </span>
-                        )}
-                        {suggestion.mood && (
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[suggestion.mood]}`}
-                          >
-                            {capitalize(suggestion.mood)}
-                          </span>
-                        )}
+            </CardHeader>
+            <CardContent>
+              {harmonicSuggestions.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  Unable to analyze key {anchorKey}. Try selecting another
+                  track.
+                </p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {harmonicSuggestions.map((suggestion) => (
+                    <div
+                      key={`${suggestion.id}-${suggestion.keyLabel}`}
+                      className="hover:bg-secondary flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-colors"
+                      onClick={() => handleSuggestedKeyClick(suggestion)}
+                    >
+                      <KeyNode keyName={suggestion.keyLabel} size="sm" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">{suggestion.name}</p>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {suggestion.type && (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(suggestion.type)}`}
+                            >
+                              {suggestion.type === "impact" ? (
+                                <Flame className="h-3 w-3" />
+                              ) : (
+                                <Layers className="h-3 w-3" />
+                              )}
+                              {capitalize(suggestion.type)}
+                            </span>
+                          )}
+                          {suggestion.mood && (
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[suggestion.mood]}`}
+                            >
+                              {capitalize(suggestion.mood)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                <form
-                  key={customHarmonicSuggestion.id}
-                  onSubmit={handleCustomKeySubmit}
-                  className="p-3 sm:col-start-2"
-                >
-                  <div className="flex items-center gap-4">
-                    <EditableKeyNode
-                      value={customKeyValue}
-                      onChange={(value) => {
-                        setCustomKeyValue(value);
-                        if (customKeyError) {
-                          setCustomKeyError(null);
-                        }
-                      }}
-                      isInvalid={Boolean(customKeyError)}
-                    />
-                    <div className="flex flex-1 flex-row justify-between">
-                      <div className="flex flex-col">
-                        <p className="font-medium">
-                          {customHarmonicSuggestion.name}
+                  ))}
+                  <form
+                    key={customHarmonicSuggestion.id}
+                    onSubmit={handleCustomKeySubmit}
+                    className="border-border/60 rounded-lg border border-dashed p-3 sm:col-start-2"
+                  >
+                    <div className="flex items-center gap-4">
+                      <EditableKeyNode
+                        value={customKeyValue}
+                        onChange={(value) => {
+                          setCustomKeyValue(value);
+                          if (customKeyError) {
+                            setCustomKeyError(null);
+                          }
+                        }}
+                        isInvalid={Boolean(customKeyError)}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">
+                            {customHarmonicSuggestion.name}
+                          </p>
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          {customHarmonicSuggestion.description}
                         </p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <Button type="submit" size="sm">
+                            Add
+                          </Button>
+                        </div>
                         {customKeyError && (
-                          <p className="text-destructive text-xs">
+                          <p className="text-destructive mt-2 text-xs">
                             {customKeyError}
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button type="submit" size="sm">
-                          Add
-                        </Button>
-                      </div>
                     </div>
-                  </div>
-                </form>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  </form>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

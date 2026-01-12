@@ -67,8 +67,8 @@ export function generateAllRootKeys(): OpenKey[] {
 
   const result: OpenKey[] = [];
 
-  for (const letter of letters) {
-    for (const number of numbers) {
+  for (const number of numbers) {
+    for (const letter of letters) {
       result.push({ letter, number });
     }
   }
