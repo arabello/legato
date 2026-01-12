@@ -1,4 +1,4 @@
-import { Flame, Layers, MinusIcon, Plus, Trash2, Share2 } from "lucide-react";
+import { MinusIcon, Plus, Trash2, Share2 } from "lucide-react";
 import * as React from "react";
 import {
   Link,
@@ -32,11 +32,13 @@ import {
   customHarmonicSuggestion,
   getHarmonicSuggestions,
   projectHarmonicSuggestion,
-  type HarmonicMood,
   type HarmonicRuleDefinition,
-  type HarmonicRuleType,
   type HarmonicSuggestion,
 } from "~/core/rules";
+import {
+  TransitionMoodBadge,
+  TransitionTypeBadge,
+} from "~/components/transition-badges";
 import type { Route } from "./+types/mix";
 import type { AppLayoutContext } from "./layout";
 
@@ -77,16 +79,22 @@ const keyColors: Record<string, string> = {
 function KeyNode({
   keyName,
   size = "md",
+  isActive = false,
 }: {
   keyName: string;
   size?: "sm" | "md";
+  isActive?: boolean;
 }) {
   const sizeClasses = size === "sm" ? "h-10 w-10 text-sm" : "h-14 w-14 text-lg";
   const color = keyColors[keyName.toLowerCase()] ?? "#9ca3af";
 
   return (
     <div
-      className={`flex items-center justify-center rounded-lg border-2 font-semibold ${sizeClasses}`}
+      className={`flex items-center justify-center rounded-lg border-2 font-semibold transition-all ${sizeClasses} ${
+        isActive
+          ? "ring-primary ring-offset-background ring-2 ring-offset-2"
+          : ""
+      }`}
       style={{
         borderColor: color,
         backgroundColor: `${color}1a`,
@@ -122,21 +130,6 @@ function EditableKeyNode({
     />
   );
 }
-
-const flowChipClasses = (type: HarmonicRuleType) =>
-  type === "impact"
-    ? "bg-energy-impact/20 text-energy-impact"
-    : "bg-energy-smooth/20 text-energy-smooth";
-
-const moodStyles: Record<HarmonicMood, string> = {
-  neutral: "bg-muted/30 text-muted-foreground",
-  tension: "bg-energy-tension/20 text-energy-tension",
-  moodier: "bg-key-minor/20 text-key-minor",
-  happier: "bg-key-major/20 text-key-major",
-};
-
-const capitalize = (value?: string) =>
-  value ? value.slice(0, 1).toUpperCase() + value.slice(1) : "";
 
 type MixSuggestion = HarmonicSuggestion & {
   keyLabel: string;
@@ -517,25 +510,8 @@ export default function Mix() {
                       )}
                       {index > 0 && (
                         <div className="flex items-center gap-2">
-                          {ruleType && (
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(ruleType)}`}
-                            >
-                              {ruleType === "impact" ? (
-                                <Flame className="h-3 w-3" />
-                              ) : (
-                                <Layers className="h-3 w-3" />
-                              )}
-                              {capitalize(ruleType)}
-                            </span>
-                          )}
-                          {ruleMood && (
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[ruleMood]}`}
-                            >
-                              {capitalize(ruleMood)}
-                            </span>
-                          )}
+                          {ruleType && <TransitionTypeBadge value={ruleType} />}
+                          {ruleMood && <TransitionMoodBadge value={ruleMood} />}
                         </div>
                       )}
                     </div>
@@ -685,23 +661,10 @@ export default function Mix() {
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           {suggestion.type && (
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${flowChipClasses(suggestion.type)}`}
-                            >
-                              {suggestion.type === "impact" ? (
-                                <Flame className="h-3 w-3" />
-                              ) : (
-                                <Layers className="h-3 w-3" />
-                              )}
-                              {capitalize(suggestion.type)}
-                            </span>
+                            <TransitionTypeBadge value={suggestion.type} />
                           )}
                           {suggestion.mood && (
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${moodStyles[suggestion.mood]}`}
-                            >
-                              {capitalize(suggestion.mood)}
-                            </span>
+                            <TransitionMoodBadge value={suggestion.mood} />
                           )}
                         </div>
                       </div>
