@@ -20,12 +20,20 @@ export function isOpenKey(key: unknown): key is OpenKey {
   );
 }
 
+const letterMap: Record<string, OpenKey["letter"]> = {
+  a: "m",
+  m: "m",
+  b: "d",
+  d: "d",
+};
+
 export function openKeyFromString(keyString: string): OpenKey | undefined {
   if (!keyString || typeof keyString !== "string" || keyString.length > 3) {
     return undefined;
   }
 
-  const match = keyString.match(/^(\d+)([dm])$/);
+  const trimmed = keyString.trim();
+  const match = trimmed.match(/^(\d{1,2})([abdmABDM])$/);
   if (!match) {
     return undefined;
   }
@@ -35,8 +43,13 @@ export function openKeyFromString(keyString: string): OpenKey | undefined {
     return undefined;
   }
 
+  const normalizedLetter = letterMap[match[2].toLowerCase()];
+  if (!normalizedLetter) {
+    return undefined;
+  }
+
   const key = {
-    letter: match[2] as "d" | "m",
+    letter: normalizedLetter,
     number,
   };
 
