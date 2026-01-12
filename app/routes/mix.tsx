@@ -24,27 +24,51 @@ export function meta({ params }: Route.MetaArgs) {
   ];
 }
 
+const keyColors: Record<string, string> = {
+  "1m": "#FF1AF1",
+  "2m": "#B85FFF",
+  "3m": "#068CFF",
+  "4m": "#00CDFF",
+  "5m": "#00EBE9",
+  "6m": "#00D989",
+  "7m": "#00FF00",
+  "8m": "#70FF00",
+  "9m": "#FFD400",
+  "10m": "#FF8500",
+  "11m": "#FF5500",
+  "12m": "#FF2F3E",
+  "1d": "#FF1AF1",
+  "2d": "#B85FFF",
+  "3d": "#068CFF",
+  "4d": "#00CDFF",
+  "5d": "#00EBE9",
+  "6d": "#00D989",
+  "7d": "#00FF00",
+  "8d": "#70FF00",
+  "9d": "#FFD400",
+  "10d": "#FF8500",
+  "11d": "#FF5500",
+  "12d": "#FF2F3E",
+};
+
 function KeyNode({
   keyName,
-  isActive = false,
   size = "md",
 }: {
   keyName: string;
-  isActive?: boolean;
   size?: "sm" | "md";
 }) {
-  const isMinor = keyName.toLowerCase().endsWith("m");
   const sizeClasses = size === "sm" ? "h-10 w-10 text-sm" : "h-14 w-14 text-lg";
+  const color = keyColors[keyName.toLowerCase()] ?? "#9ca3af";
 
   return (
     <div
-      className={`flex items-center justify-center rounded-lg border-2 font-semibold ${sizeClasses} ${
-        isActive
-          ? "border-primary bg-primary/10 text-primary"
-          : isMinor
-            ? "border-key-minor bg-key-minor/10 text-key-minor"
-            : "border-key-major bg-key-major/10 text-key-major"
-      }`}
+      className={`flex items-center justify-center rounded-lg border-2 font-semibold ${sizeClasses}`}
+      style={{
+        borderColor: color,
+        backgroundColor: `${color}1a`,
+        color: color,
+      }}
     >
       {keyName}
     </div>
@@ -289,10 +313,7 @@ export default function Mix() {
                     </div>
 
                     {/* Key Node */}
-                    <KeyNode
-                      keyName={formatOpenKey(track.key)}
-                      isActive={isSelected}
-                    />
+                    <KeyNode keyName={formatOpenKey(track.key)} />
 
                     {/* Right side - Track info */}
                     <div className="w-48">
@@ -308,7 +329,6 @@ export default function Mix() {
                             event.currentTarget.blur();
                           }
                         }}
-                        onFocus={() => setSelectedTrackId(track.id)}
                       />
                       <input
                         value={track.details || ""}
@@ -322,7 +342,6 @@ export default function Mix() {
                             event.currentTarget.blur();
                           }
                         }}
-                        onFocus={() => setSelectedTrackId(track.id)}
                       />
                     </div>
                   </div>

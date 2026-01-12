@@ -95,6 +95,34 @@ html {
   --key-minor: #6366f1;
   --key-major: #f59e0b;
 
+  /* Open Key Colors - Monthly (m) */
+  --key-1m: #ff00ff; /* Pink */
+  --key-2m: #cf00ff; /* Purple */
+  --key-3m: #3f00ff; /* Blue */
+  --key-4m: #00ffff; /* Cyan */
+  --key-5m: #00ffcf; /* Teal */
+  --key-6m: #00ff6f; /* Green */
+  --key-7m: #6fff00; /* Lime */
+  --key-8m: #afff00; /* Yellow-green */
+  --key-9m: #ffff00; /* Yellow */
+  --key-10m: #ffaf00; /* Orange */
+  --key-11m: #ff6f00; /* Dark Orange */
+  --key-12m: #ff0000; /* Red */
+
+  /* Open Key Colors - Daily (d) */
+  --key-1d: #ff00ff; /* Pink */
+  --key-2d: #cf00ff; /* Purple */
+  --key-3d: #3f00ff; /* Blue */
+  --key-4d: #00ffff; /* Cyan */
+  --key-5d: #00ffcf; /* Teal */
+  --key-6d: #00ff6f; /* Green */
+  --key-7d: #6fff00; /* Lime */
+  --key-8d: #afff00; /* Yellow-green */
+  --key-9d: #ffff00; /* Yellow */
+  --key-10d: #ffaf00; /* Orange */
+  --key-11d: #ff6f00; /* Dark Orange */
+  --key-12d: #ff0000; /* Red */
+
   /* Energy indicators */
   --energy-smooth: #22c55e;
   --energy-impact: #ef4444;
