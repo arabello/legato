@@ -221,3 +221,11 @@ export function removeTrack(mix: Mix, trackId: string): Mix {
 
   return { ...mix, startKey: nextStartKey, tracks: nextTracks };
 }
+
+export function clearMixTimeline(mix: Mix): Mix {
+  return {
+    ...mix,
+    startKey: DEFAULT_KEY,
+    tracks: [],
+  };
+}

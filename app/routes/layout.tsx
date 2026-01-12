@@ -16,6 +16,7 @@ import {
 } from "~/components/ui/alert-dialog";
 import {
   appendTrack,
+  clearMixTimeline,
   createMixRecord,
   loadMixes,
   removeTrack as removeTrackFromMix,
@@ -32,6 +33,7 @@ export type AppLayoutContext = {
   hydrated: boolean;
   createMix: (options?: CreateMixOptions) => Mix;
   deleteMix: (mixId: string) => void;
+  deleteAllMixes: () => void;
   addKeyToMix: (mixId: string, key: OpenKey) => void;
   updateMixName: (mixId: string, name: string) => void;
   updateTrack: (
@@ -39,6 +41,7 @@ export type AppLayoutContext = {
     trackId: string,
     updates: Parameters<typeof updateTrackInfo>[2],
   ) => void;
+  clearTimeline: (mixId: string) => void;
   removeTrack: (mixId: string, trackId: string) => void;
 };
 
@@ -80,6 +83,13 @@ export default function AppLayout() {
     [location.pathname, navigate],
   );
 
+  const deleteAllMixes = React.useCallback(() => {
+    setMixes([]);
+    if (location.pathname.startsWith("/mix/")) {
+      navigate("/");
+    }
+  }, [location.pathname, navigate]);
+
   const addKeyToMix = React.useCallback((mixId: string, key: OpenKey) => {
     setMixes((prev) =>
       prev.map((mix) => (mix.id === mixId ? appendTrack(mix, key) : mix)),
@@ -115,15 +125,23 @@ export default function AppLayout() {
     );
   }, []);
 
+  const clearTimeline = React.useCallback((mixId: string) => {
+    setMixes((prev) =>
+      prev.map((mix) => (mix.id === mixId ? clearMixTimeline(mix) : mix)),
+    );
+  }, []);
+
   const contextValue = React.useMemo<AppLayoutContext>(
     () => ({
       mixes,
       hydrated,
       createMix,
       deleteMix,
+      deleteAllMixes,
       addKeyToMix,
       updateMixName,
       updateTrack,
+      clearTimeline,
       removeTrack,
     }),
     [
@@ -131,9 +149,11 @@ export default function AppLayout() {
       hydrated,
       createMix,
       deleteMix,
+      deleteAllMixes,
       addKeyToMix,
       updateMixName,
       updateTrack,
+      clearTimeline,
       removeTrack,
     ],
   );
@@ -199,10 +219,40 @@ export default function AppLayout() {
 
         {/* My Mixes */}
         <div className="mt-6 flex-1 overflow-hidden px-3">
-          <div className="mb-2 flex items-center justify-between px-3">
+          <div className="group mb-2 flex items-center justify-between px-3">
             <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
               My Mixes
             </span>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus-visible:opacity-100"
+                  type="button"
+                >
+                  Delete all
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete all mixes?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This removes every mix stored on this device. The action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={deleteAllMixes}
+                  >
+                    Delete all
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
           <ScrollArea className="h-[calc(100%-2rem)] pr-2">
             {mixes.length === 0 ? (

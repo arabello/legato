@@ -154,6 +154,7 @@ export default function Mix() {
     updateMixName,
     updateTrack,
     removeTrack,
+    clearTimeline,
   } = useOutletContext<AppLayoutContext>();
   const shareParam = searchParams.get("share");
   const mix = mixes.find((entry) => entry.id === id);
@@ -167,6 +168,8 @@ export default function Mix() {
   const rootKeyOptions = React.useMemo(() => generateAllRootKeys(), []);
   const shareHandledRef = React.useRef(false);
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
+  const [clearTimelineDialogOpen, setClearTimelineDialogOpen] =
+    React.useState(false);
   const [copyState, setCopyState] = React.useState<"idle" | "copied" | "error">(
     "idle",
   );
@@ -329,6 +332,10 @@ export default function Mix() {
     }
   };
 
+  const handleClearTimelineDialogChange = (open: boolean) => {
+    setClearTimelineDialogOpen(open);
+  };
+
   const handleCopyShareLink = async () => {
     if (!shareLink) return;
     try {
@@ -351,6 +358,12 @@ export default function Mix() {
       console.error("Failed to copy share link", error);
       setCopyState("error");
     }
+  };
+
+  const handleConfirmClearTimeline = () => {
+    if (!mix) return;
+    clearTimeline(mix.id);
+    setClearTimelineDialogOpen(false);
   };
 
   if (!mix) {
@@ -399,47 +412,85 @@ export default function Mix() {
               placeholder="Untitled Mix"
             />
           </div>
-          <AlertDialog
-            open={shareDialogOpen}
-            onOpenChange={handleShareDialogChange}
-          >
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                type="button"
-                title="Share mix"
-              >
-                <Share2 className="h-4 w-4" />
-                <span className="sr-only">Share mix</span>
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Share this mix</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Copy a link that recreates this timeline on another device.
-                  Anyone opening it will get their own copy of these tracks.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              {copyState === "error" && (
-                <p className="text-destructive text-sm">
-                  Failed to copy the link automatically. Please copy it
-                  manually.
-                </p>
-              )}
-              <AlertDialogFooter>
-                <AlertDialogCancel type="button">Close</AlertDialogCancel>
+          <div className="flex items-center gap-2">
+            <AlertDialog
+              open={clearTimelineDialogOpen}
+              onOpenChange={handleClearTimelineDialogChange}
+            >
+              <AlertDialogTrigger asChild>
                 <Button
+                  variant="outline"
+                  size="icon"
                   type="button"
-                  onClick={handleCopyShareLink}
-                  disabled={!shareLink}
+                  disabled={isTimelineEmpty}
+                  title="Clear timeline"
                 >
-                  {copyState === "copied" ? "Copied!" : "Copy Link"}
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Clear timeline</span>
                 </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear this timeline?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This removes every track from the timeline and resets the
+                    starting key back to the default. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={handleConfirmClearTimeline}
+                    disabled={isTimelineEmpty}
+                  >
+                    Clear timeline
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog
+              open={shareDialogOpen}
+              onOpenChange={handleShareDialogChange}
+            >
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  type="button"
+                  title="Share mix"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="sr-only">Share mix</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Share this mix</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Copy a link that recreates this timeline on another device.
+                    Anyone opening it will get their own copy of these tracks.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                {copyState === "error" && (
+                  <p className="text-destructive text-sm">
+                    Failed to copy the link automatically. Please copy it
+                    manually.
+                  </p>
+                )}
+                <AlertDialogFooter>
+                  <AlertDialogCancel type="button">Close</AlertDialogCancel>
+                  <Button
+                    type="button"
+                    onClick={handleCopyShareLink}
+                    disabled={!shareLink}
+                  >
+                    {copyState === "copied" ? "Copied!" : "Copy Link"}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
 
         {/* Track Timeline */}
