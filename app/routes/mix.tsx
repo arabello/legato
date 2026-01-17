@@ -1,4 +1,4 @@
-import { MinusIcon, Plus, Trash2, Share2 } from "lucide-react";
+import { MinusIcon, Plus, Trash2, Share2, Upload } from "lucide-react";
 import * as React from "react";
 import {
   Link,
@@ -122,6 +122,7 @@ export default function Mix() {
     updateTrack,
     removeTrack,
     clearTimeline,
+    importMixFromNml,
   } = useOutletContext<AppLayoutContext>();
   const shareParam = searchParams.get("share");
   const mix = mixes.find((entry) => entry.id === id);
@@ -140,6 +141,33 @@ export default function Mix() {
   const [copyState, setCopyState] = React.useState<"idle" | "copied" | "error">(
     "idle",
   );
+  const importFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    importFileInputRef.current?.click();
+  };
+
+  const handleImportFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (typeof content === "string") {
+        const newMix = importMixFromNml(content);
+        if (newMix) {
+          navigate(`/mix/${newMix.id}`);
+        }
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so the same file can be selected again
+    event.target.value = "";
+  };
 
   const handleSuggestedKeyClick = (suggestion: MixSuggestion) => {
     if (!mix) return;
@@ -385,6 +413,23 @@ export default function Mix() {
             />
           </div>
           <div className="flex items-center gap-2">
+            <input
+              ref={importFileInputRef}
+              type="file"
+              accept=".nml"
+              onChange={handleImportFileChange}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              title="Import from Traktor"
+              onClick={handleImportClick}
+            >
+              <Upload className="h-4 w-4" />
+              <span className="sr-only">Import from Traktor</span>
+            </Button>
             <AlertDialog
               open={clearTimelineDialogOpen}
               onOpenChange={handleClearTimelineDialogChange}

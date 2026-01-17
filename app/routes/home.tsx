@@ -1,5 +1,6 @@
+import * as React from "react";
 import { useNavigate, useOutletContext } from "react-router";
-import { Plus, TrendingUp, Zap, Music, Waves } from "lucide-react";
+import { Plus, TrendingUp, Zap, Music, Waves, Upload } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { getKeyColor } from "~/core/key-colors";
@@ -77,11 +78,36 @@ function KeyBadge({ keyName }: { keyName: string }) {
 
 export default function Home() {
   const navigate = useNavigate();
-  const { createMix } = useOutletContext<AppLayoutContext>();
+  const { createMix, importMixFromNml } = useOutletContext<AppLayoutContext>();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCreateMix = () => {
     const mix = createMix();
     navigate(`/mix/${mix.id}`);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (typeof content === "string") {
+        const mix = importMixFromNml(content);
+        if (mix) {
+          navigate(`/mix/${mix.id}`);
+        }
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so the same file can be selected again
+    event.target.value = "";
   };
 
   const handleTemplateClick = (template: (typeof templates)[number]) => {
@@ -107,10 +133,28 @@ export default function Home() {
         </p>
 
         {/* CTAs */}
-        <Button size="lg" className="gap-2" onClick={handleCreateMix}>
-          <Plus className="h-4 w-4" />
-          Create New Mix
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button size="lg" className="gap-2" onClick={handleCreateMix}>
+            <Plus className="h-4 w-4" />
+            Create New Mix
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".nml"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            size="lg"
+            className="gap-2"
+            onClick={handleImportClick}
+          >
+            <Upload className="h-4 w-4" />
+            Import from Traktor
+          </Button>
+        </div>
       </div>
 
       {/* Templates Section */}

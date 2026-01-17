@@ -5,6 +5,7 @@ import {
   type OpenKey,
 } from "./openKey";
 import { matchHarmonicRule, type HarmonicRuleDefinition } from "./rules";
+import type { NmlPlaylist } from "./nml-parser";
 
 const STORAGE_KEY = "legato.mixes";
 
@@ -90,6 +91,45 @@ export function createMixRecord(options?: CreateMixOptions): Mix {
       title: index === 0 ? "Opening Track" : "",
       details: "",
     })),
+  };
+}
+
+export type CreateMixFromNmlOptions = {
+  playlist: NmlPlaylist;
+};
+
+export function createMixFromNml(options: CreateMixFromNmlOptions): Mix {
+  const { playlist } = options;
+  const createdAt = Date.now();
+
+  const tracks: MixTrack[] = playlist.tracks.map((nmlTrack) => {
+    const titleParts: string[] = [];
+    if (nmlTrack.title) {
+      titleParts.push(nmlTrack.title);
+    }
+    if (nmlTrack.artist) {
+      titleParts.push(nmlTrack.artist);
+    }
+    const title = titleParts.join(" - ") || "";
+
+    const details = nmlTrack.bpm ? `${nmlTrack.bpm} BPM` : "";
+
+    return {
+      id: generateId("track"),
+      key: nmlTrack.key ?? DEFAULT_KEY,
+      title,
+      details,
+    };
+  });
+
+  const startKey = tracks[0]?.key ?? DEFAULT_KEY;
+
+  return {
+    id: generateId("mix"),
+    name: playlist.name || "Imported Mix",
+    startKey,
+    createdAt,
+    tracks,
   };
 }
 

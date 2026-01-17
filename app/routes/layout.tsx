@@ -18,6 +18,7 @@ import {
   appendTrack,
   clearMixTimeline,
   createMixRecord,
+  createMixFromNml,
   loadMixes,
   removeTrack as removeTrackFromMix,
   saveMixes,
@@ -26,6 +27,7 @@ import {
   type CreateMixOptions,
   type Mix,
 } from "~/core/mix-storage";
+import { parseNmlFile } from "~/core/nml-parser";
 import { formatOpenKey, type OpenKey } from "~/core/openKey";
 
 export type AppLayoutContext = {
@@ -43,6 +45,7 @@ export type AppLayoutContext = {
   ) => void;
   clearTimeline: (mixId: string) => void;
   removeTrack: (mixId: string, trackId: string) => void;
+  importMixFromNml: (nmlContent: string) => Mix | null;
 };
 
 export default function AppLayout() {
@@ -131,6 +134,21 @@ export default function AppLayout() {
     );
   }, []);
 
+  const importMixFromNml = React.useCallback(
+    (nmlContent: string): Mix | null => {
+      try {
+        const playlist = parseNmlFile(nmlContent);
+        const newMix = createMixFromNml({ playlist });
+        setMixes((prev) => [...prev, newMix]);
+        return newMix;
+      } catch (error) {
+        console.error("Failed to import NML file", error);
+        return null;
+      }
+    },
+    [setMixes],
+  );
+
   const contextValue = React.useMemo<AppLayoutContext>(
     () => ({
       mixes,
@@ -143,6 +161,7 @@ export default function AppLayout() {
       updateTrack,
       clearTimeline,
       removeTrack,
+      importMixFromNml,
     }),
     [
       mixes,
@@ -155,6 +174,7 @@ export default function AppLayout() {
       updateTrack,
       clearTimeline,
       removeTrack,
+      importMixFromNml,
     ],
   );
 
