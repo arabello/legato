@@ -14,6 +14,35 @@ import "./app.css";
 
 const base = import.meta.env.PROD ? "/legato/" : "/";
 const redirectStorageKey = "legato:redirectPath";
+const siteUrl = "https://matteopellegrino.dev/legato";
+
+export const meta: Route.MetaFunction = () => [
+  { title: "Legato - Harmonic Mixing" },
+  {
+    name: "description",
+    content:
+      "Plan harmonic mixing DJ sets. Visualize key compatibility, experiment with track order, and build sets that flow naturally.",
+  },
+  { property: "og:type", content: "website" },
+  { property: "og:url", content: siteUrl },
+  { property: "og:title", content: "Legato - Harmonic Mixing" },
+  {
+    property: "og:description",
+    content:
+      "Plan harmonic mixing DJ sets. Visualize key compatibility, experiment with track order, and build sets that flow naturally.",
+  },
+  { property: "og:image", content: `og-image.png` },
+  { property: "og:image:width", content: "1200" },
+  { property: "og:image:height", content: "630" },
+  { name: "twitter:card", content: "summary_large_image" },
+  { name: "twitter:title", content: "Legato - Harmonic Mixing Reimagined" },
+  {
+    name: "twitter:description",
+    content:
+      "Plan seamless DJ sets with harmonic mixing. Visualize key compatibility, experiment with track order, and build sets that flow naturally.",
+  },
+  { name: "twitter:image", content: `og-image.png` },
+];
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
