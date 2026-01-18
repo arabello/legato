@@ -1,8 +1,10 @@
+import { useOutletContext } from "react-router";
 import {
   TransitionMoodBadge,
   TransitionTypeBadge,
 } from "~/components/transition-badges";
 import type { Route } from "./+types/documentation";
+import type { AppLayoutContext } from "./layout";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -45,6 +47,8 @@ const usageSteps = [
 ];
 
 export default function Documentation() {
+  const { openAboutDialog } = useOutletContext<AppLayoutContext>();
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-12">
@@ -188,6 +192,17 @@ export default function Documentation() {
             before showtime.
           </p>
         </section>
+
+        {/* Footer */}
+        <footer className="pt-8 pb-6 text-center">
+          <button
+            type="button"
+            onClick={openAboutDialog}
+            className="text-muted-foreground/60 hover:text-muted-foreground text-sm transition-colors"
+          >
+            Questions or feedback? Get in touch
+          </button>
+        </footer>
       </div>
     </div>
   );

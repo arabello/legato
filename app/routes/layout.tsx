@@ -1,6 +1,13 @@
 import * as React from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
-import { Home, FileText, Plus, AudioWaveform, Trash2 } from "lucide-react";
+import {
+  Home,
+  FileText,
+  Plus,
+  AudioWaveform,
+  Trash2,
+  HelpCircle,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import {
@@ -48,6 +55,7 @@ export type AppLayoutContext = {
   removeTrack: (mixId: string, trackId: string) => void;
   moveTrack: (mixId: string, trackId: string, toIndex: number) => void;
   importMixFromNml: (nmlContent: string) => Mix | null;
+  openAboutDialog: () => void;
 };
 
 export default function AppLayout() {
@@ -55,6 +63,25 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const [mixes, setMixes] = React.useState<Mix[]>([]);
   const [hydrated, setHydrated] = React.useState(false);
+  const [aboutDialogOpen, setAboutDialogOpen] = React.useState(false);
+  const [emailCopyState, setEmailCopyState] = React.useState<
+    "idle" | "copied" | "error"
+  >("idle");
+
+  const openAboutDialog = React.useCallback(() => {
+    setAboutDialogOpen(true);
+    setEmailCopyState("idle");
+  }, []);
+
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText("matteo.pelle.pellegrino@gmail.com");
+      setEmailCopyState("copied");
+      setTimeout(() => setEmailCopyState("idle"), 2000);
+    } catch {
+      setEmailCopyState("error");
+    }
+  };
 
   React.useEffect(() => {
     const stored = loadMixes();
@@ -176,6 +203,7 @@ export default function AppLayout() {
       removeTrack,
       moveTrack,
       importMixFromNml,
+      openAboutDialog,
     }),
     [
       mixes,
@@ -190,6 +218,7 @@ export default function AppLayout() {
       removeTrack,
       moveTrack,
       importMixFromNml,
+      openAboutDialog,
     ],
   );
 
@@ -250,6 +279,14 @@ export default function AppLayout() {
             <FileText className="h-4 w-4" />
             Documentation
           </NavLink>
+          <button
+            type="button"
+            onClick={openAboutDialog}
+            className="text-sidebar-foreground hover:bg-secondary hover:text-foreground flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
+          >
+            <HelpCircle className="h-4 w-4" />
+            About
+          </button>
         </nav>
 
         {/* My Mixes */}
@@ -374,6 +411,38 @@ export default function AppLayout() {
       <main className="flex-1 overflow-auto">
         <Outlet context={contextValue} />
       </main>
+
+      {/* About Dialog */}
+      <AlertDialog open={aboutDialogOpen} onOpenChange={setAboutDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>About Legato</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  As a DJ who relies on harmonic mixing, I wanted a simple tool
+                  to plan my sets with confidence. Legato was born from that
+                  need—helping you visualize key transitions, experiment with
+                  track order, and build sets that flow naturally.
+                </p>
+                <p>
+                  Have questions, feedback, or ideas? I'd love to hear from you.
+                  Reach out anytime at:
+                </p>
+                <p className="text-foreground font-medium">
+                  matteo.pelle.pellegrino@gmail.com
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCopyEmail}>
+              {emailCopyState === "copied" ? "Copied!" : "Copy Email"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

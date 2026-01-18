@@ -78,7 +78,8 @@ function KeyBadge({ keyName }: { keyName: string }) {
 
 export default function Home() {
   const navigate = useNavigate();
-  const { createMix, importMixFromNml } = useOutletContext<AppLayoutContext>();
+  const { createMix, importMixFromNml, openAboutDialog } =
+    useOutletContext<AppLayoutContext>();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCreateMix = () => {
@@ -203,6 +204,17 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="px-8 pb-6 text-center">
+        <button
+          type="button"
+          onClick={openAboutDialog}
+          className="text-muted-foreground/60 hover:text-muted-foreground text-sm transition-colors"
+        >
+          Questions or feedback? Get in touch
+        </button>
+      </footer>
     </div>
   );
 }

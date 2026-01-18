@@ -307,6 +307,7 @@ export default function Mix() {
     moveTrack,
     clearTimeline,
     importMixFromNml,
+    openAboutDialog,
   } = useOutletContext<AppLayoutContext>();
   const shareParam = searchParams.get("share");
   const mix = mixes.find((entry) => entry.id === id);
@@ -935,6 +936,17 @@ export default function Mix() {
             </CardContent>
           </Card>
         )}
+
+        {/* Footer */}
+        <footer className="mt-8 pb-6 text-center">
+          <button
+            type="button"
+            onClick={openAboutDialog}
+            className="text-muted-foreground/60 hover:text-muted-foreground text-sm transition-colors"
+          >
+            Questions or feedback? Get in touch
+          </button>
+        </footer>
       </div>
     </div>
   );
