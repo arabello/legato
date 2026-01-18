@@ -7,6 +7,7 @@ import {
   AudioWaveform,
   Trash2,
   HelpCircle,
+  Menu,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { ScrollArea } from "~/components/ui/scroll-area";
@@ -21,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
+import { Sheet, SheetContent } from "~/components/ui/sheet";
 import {
   appendTrack,
   clearMixTimeline,
@@ -67,6 +69,7 @@ export default function AppLayout() {
   const [emailCopyState, setEmailCopyState] = React.useState<
     "idle" | "copied" | "error"
   >("idle");
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   const openAboutDialog = React.useCallback(() => {
     setAboutDialogOpen(true);
@@ -95,6 +98,11 @@ export default function AppLayout() {
     if (!hydrated) return;
     saveMixes(mixes);
   }, [hydrated, mixes]);
+
+  // Close sidebar on navigation
+  React.useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const createMix = React.useCallback(
     (options?: CreateMixOptions) => {
@@ -227,188 +235,217 @@ export default function AppLayout() {
     navigate(`/mix/${newMix.id}`);
   }, [createMix, navigate]);
 
+  const sidebarContent = (
+    <>
+      {/* Logo */}
+      <div className="flex items-center gap-2 px-4 py-5">
+        <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
+          <AudioWaveform className="text-primary-foreground h-5 w-5" />
+        </div>
+        <span className="text-foreground text-lg font-semibold">Legato</span>
+      </div>
+
+      {/* New Mix Button */}
+      <div className="px-3 pb-4">
+        <Button
+          className="w-full justify-start gap-2"
+          size="sm"
+          onClick={handleCreateMix}
+        >
+          <Plus className="h-4 w-4" />
+          New Mix
+        </Button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="space-y-1 px-3">
+        <NavLink
+          to="/"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+              isActive
+                ? "bg-secondary text-foreground"
+                : "text-sidebar-foreground hover:bg-secondary hover:text-foreground"
+            }`
+          }
+        >
+          <Home className="h-4 w-4" />
+          Home
+        </NavLink>
+        <NavLink
+          to="/documentation"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+              isActive
+                ? "bg-secondary text-foreground"
+                : "text-sidebar-foreground hover:bg-secondary hover:text-foreground"
+            }`
+          }
+        >
+          <FileText className="h-4 w-4" />
+          Documentation
+        </NavLink>
+        <button
+          type="button"
+          onClick={openAboutDialog}
+          className="text-sidebar-foreground hover:bg-secondary hover:text-foreground flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
+        >
+          <HelpCircle className="h-4 w-4" />
+          About
+        </button>
+      </nav>
+
+      {/* My Mixes */}
+      <div className="mt-6 flex-1 overflow-hidden px-3">
+        <div className="group mb-2 flex items-center justify-between px-3">
+          <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+            My Mixes
+          </span>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus-visible:opacity-100"
+                type="button"
+              >
+                Delete all
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete all mixes?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes every mix stored on this device. The action
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={deleteAllMixes}
+                >
+                  Delete all
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        <ScrollArea className="h-[calc(100%-2rem)] pr-2">
+          {mixes.length === 0 ? (
+            <p className="text-muted-foreground px-3 py-6 text-sm">
+              No mixes yet. Start by creating one.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {mixes.map((mix) => {
+                const isActive = location.pathname === `/mix/${mix.id}`;
+                return (
+                  <div key={mix.id} className="group relative">
+                    <NavLink
+                      to={`/mix/${mix.id}`}
+                      className={`block rounded-md px-3 py-2 pr-10 transition-colors ${
+                        isActive
+                          ? "border-primary bg-secondary border"
+                          : "hover:bg-secondary"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-sm ${isActive ? "text-foreground" : "text-sidebar-foreground"}`}
+                        >
+                          {mix.name}
+                        </span>
+                        {isActive && (
+                          <span className="bg-primary h-2 w-2 rounded-full" />
+                        )}
+                      </div>
+                      <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
+                        <span className="text-primary">
+                          {formatOpenKey(mix.startKey)}
+                        </span>
+                        <span>•</span>
+                        <span className="truncate">
+                          {mix.tracks[0]?.details || "Add notes"}
+                        </span>
+                      </div>
+                    </NavLink>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-muted-foreground hover:text-destructive absolute top-1/2 right-1 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete mix</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this mix?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. The mix{" "}
+                            <span className="font-semibold">{mix.name}</span>{" "}
+                            will be removed from this device.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => deleteMix(mix.id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+    </>
+  );
+
   return (
-    <div className="bg-background flex h-screen w-full">
-      {/* Sidebar */}
-      <aside className="border-sidebar-border bg-sidebar flex w-56 flex-col border-r">
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-4 py-5">
+    <div className="bg-background flex h-screen w-full flex-col md:flex-row">
+      {/* Mobile Header */}
+      <header className="bg-sidebar border-sidebar-border fixed top-0 right-0 left-0 z-40 flex h-14 items-center justify-between border-b px-4 md:hidden">
+        <div className="flex items-center gap-2">
           <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
             <AudioWaveform className="text-primary-foreground h-5 w-5" />
           </div>
           <span className="text-foreground text-lg font-semibold">Legato</span>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </header>
 
-        {/* New Mix Button */}
-        <div className="px-3 pb-4">
-          <Button
-            className="w-full justify-start gap-2"
-            size="sm"
-            onClick={handleCreateMix}
-          >
-            <Plus className="h-4 w-4" />
-            New Mix
-          </Button>
-        </div>
+      {/* Mobile Sidebar (Sheet) */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent className="bg-sidebar w-56 p-0">
+          {sidebarContent}
+        </SheetContent>
+      </Sheet>
 
-        {/* Navigation */}
-        <nav className="space-y-1 px-3">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                isActive
-                  ? "bg-secondary text-foreground"
-                  : "text-sidebar-foreground hover:bg-secondary hover:text-foreground"
-              }`
-            }
-          >
-            <Home className="h-4 w-4" />
-            Home
-          </NavLink>
-          <NavLink
-            to="/documentation"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                isActive
-                  ? "bg-secondary text-foreground"
-                  : "text-sidebar-foreground hover:bg-secondary hover:text-foreground"
-              }`
-            }
-          >
-            <FileText className="h-4 w-4" />
-            Documentation
-          </NavLink>
-          <button
-            type="button"
-            onClick={openAboutDialog}
-            className="text-sidebar-foreground hover:bg-secondary hover:text-foreground flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-          >
-            <HelpCircle className="h-4 w-4" />
-            About
-          </button>
-        </nav>
-
-        {/* My Mixes */}
-        <div className="mt-6 flex-1 overflow-hidden px-3">
-          <div className="group mb-2 flex items-center justify-between px-3">
-            <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-              My Mixes
-            </span>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus-visible:opacity-100"
-                  type="button"
-                >
-                  Delete all
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete all mixes?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This removes every mix stored on this device. The action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={deleteAllMixes}
-                  >
-                    Delete all
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-          <ScrollArea className="h-[calc(100%-2rem)] pr-2">
-            {mixes.length === 0 ? (
-              <p className="text-muted-foreground px-3 py-6 text-sm">
-                No mixes yet. Start by creating one.
-              </p>
-            ) : (
-              <div className="space-y-1">
-                {mixes.map((mix) => {
-                  const isActive = location.pathname === `/mix/${mix.id}`;
-                  return (
-                    <div key={mix.id} className="group relative">
-                      <NavLink
-                        to={`/mix/${mix.id}`}
-                        className={`block rounded-md px-3 py-2 pr-10 transition-colors ${
-                          isActive
-                            ? "border-primary bg-secondary border"
-                            : "hover:bg-secondary"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`text-sm ${isActive ? "text-foreground" : "text-sidebar-foreground"}`}
-                          >
-                            {mix.name}
-                          </span>
-                          {isActive && (
-                            <span className="bg-primary h-2 w-2 rounded-full" />
-                          )}
-                        </div>
-                        <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
-                          <span className="text-primary">
-                            {formatOpenKey(mix.startKey)}
-                          </span>
-                          <span>•</span>
-                          <span className="truncate">
-                            {mix.tracks[0]?.details || "Add notes"}
-                          </span>
-                        </div>
-                      </NavLink>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:text-destructive absolute top-1/2 right-1 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete mix</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Delete this mix?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. The mix{" "}
-                              <span className="font-semibold">{mix.name}</span>{" "}
-                              will be removed from this device.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => deleteMix(mix.id)}
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </ScrollArea>
-        </div>
+      {/* Desktop Sidebar */}
+      <aside className="border-sidebar-border bg-sidebar hidden w-56 flex-col border-r md:flex">
+        {sidebarContent}
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-14 md:pt-0">
         <Outlet context={contextValue} />
       </main>
 

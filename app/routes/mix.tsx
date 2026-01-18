@@ -11,6 +11,7 @@ import {
   DragOverlay,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -183,9 +184,9 @@ function SortableTrackItem({
         onClick={() => onSelect(track.id)}
       >
         {/* Track Node */}
-        <div className="flex items-center gap-6 py-4">
-          {/* Left side - Relationship info */}
-          <div className="flex w-32 flex-col items-end gap-4 text-right">
+        <div className="flex items-center gap-3 py-4 md:gap-6">
+          {/* Left side - Relationship info (hidden on mobile) */}
+          <div className="hidden w-32 flex-col items-end gap-4 text-right md:flex">
             {rule && (
               <span className="text-muted-foreground text-sm">{rule.name}</span>
             )}
@@ -201,15 +202,15 @@ function SortableTrackItem({
           <KeyNode keyName={formatOpenKey(track.key)} isActive={isSelected} />
 
           {/* Right side - Track info */}
-          <div className="flex items-start gap-3">
-            <div className="w-48">
+          <div className="flex flex-1 items-start gap-3 md:flex-none">
+            <div className="min-w-0 flex-1 md:w-48 md:flex-none">
               <input
                 value={track.title ?? ""}
                 onChange={(event) =>
                   onTitleChange(track.id, event.target.value)
                 }
                 placeholder="Add track title..."
-                className="font-medium outline-none focus-visible:ring-0"
+                className="w-full font-medium outline-none focus-visible:ring-0"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.currentTarget.blur();
@@ -229,12 +230,26 @@ function SortableTrackItem({
                   }
                 }}
               />
+              {/* Mobile only - Relationship info */}
+              {index > 0 && (
+                <div className="mt-2 flex flex-col gap-1 md:hidden">
+                  {rule && (
+                    <span className="text-muted-foreground text-xs">
+                      {rule.name}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2">
+                    {ruleType && <TransitionTypeBadge value={ruleType} />}
+                    {ruleMood && <TransitionMoodBadge value={ruleMood} />}
+                  </div>
+                </div>
+              )}
             </div>
             {showDragHandle && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-foreground cursor-grab opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+                className="text-muted-foreground hover:text-foreground cursor-grab opacity-100 transition-opacity active:cursor-grabbing md:opacity-0 md:group-hover:opacity-100"
                 {...attributes}
                 {...listeners}
               >
@@ -247,7 +262,7 @@ function SortableTrackItem({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:bg-destructive opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus-visible:opacity-100"
+                  className="text-muted-foreground hover:bg-destructive opacity-100 transition-opacity hover:text-white focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -337,6 +352,9 @@ export default function Mix() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -643,10 +661,10 @@ export default function Mix() {
   return (
     <div className="flex h-full flex-col items-center">
       {/* Main Timeline Area */}
-      <div className="scrollbar-hide flex-1 overflow-auto p-8">
+      <div className="scrollbar-hide flex-1 overflow-auto p-4 md:p-8">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div className="flex-1 text-center">
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="text-center md:flex-1">
             <input
               value={mix.name}
               onChange={(event) => handleMixNameChange(event.target.value)}
@@ -659,7 +677,7 @@ export default function Mix() {
               placeholder="Untitled Mix"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2 md:justify-end">
             <input
               ref={importFileInputRef}
               type="file"
@@ -870,7 +888,7 @@ export default function Mix() {
                   track.
                 </p>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2">
                   {harmonicSuggestions.map((suggestion) => (
                     <div
                       key={`${suggestion.id}-${suggestion.keyLabel}`}
@@ -896,7 +914,7 @@ export default function Mix() {
                   <form
                     key={customHarmonicSuggestion.id}
                     onSubmit={handleCustomKeySubmit}
-                    className="border-border/60 rounded-lg border border-dashed p-3 sm:col-start-2"
+                    className="border-border/60 rounded-lg border border-dashed p-3 md:col-start-2"
                   >
                     <div className="flex items-center gap-4">
                       <EditableKeyNode

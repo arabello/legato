@@ -126,10 +126,15 @@ export default function Home() {
         </p>
 
         {/* CTAs */}
-        <div className="flex items-center gap-3">
-          <Button size="lg" className="gap-2" onClick={handleCreateMix}>
-            <Plus className="h-4 w-4" />
-            Create New Mix
+        <div className="flex flex-col-reverse items-center gap-3 md:flex-row">
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full gap-2 md:w-auto"
+            onClick={handleImportClick}
+          >
+            <Upload className="h-4 w-4" />
+            Import from Traktor
           </Button>
           <input
             ref={fileInputRef}
@@ -139,13 +144,12 @@ export default function Home() {
             className="hidden"
           />
           <Button
-            variant="outline"
             size="lg"
-            className="gap-2"
-            onClick={handleImportClick}
+            className="w-full gap-2 md:w-auto"
+            onClick={handleCreateMix}
           >
-            <Upload className="h-4 w-4" />
-            Import from Traktor
+            <Plus className="h-4 w-4" />
+            Create New Mix
           </Button>
         </div>
       </div>
@@ -155,7 +159,7 @@ export default function Home() {
         <div className="mx-auto max-w-4xl">
           <h2 className="mb-6 text-lg font-semibold">Start from a template</h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {templates.map((template) => (
               <Card
                 key={template.id}
