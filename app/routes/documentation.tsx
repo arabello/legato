@@ -13,9 +13,9 @@ export function meta({}: Route.MetaArgs) {
 
 const usageSteps = [
   {
-    title: "Create or load a mix",
+    title: "Create or import a mix",
     description:
-      "Start from the Home page by tapping “Create New Mix” for a blank canvas or pick a template to prefill a timeline with keys that already flow together.",
+      'Start from the Home page by tapping "Create New Mix" for a blank canvas, pick a template to prefill a timeline, or import an existing playlist directly from Traktor using the upload button in the mix editor.',
   },
   {
     title: "Describe each track",
@@ -25,12 +25,17 @@ const usageSteps = [
   {
     title: "Review the suggested transitions",
     description:
-      "The suggestions panel shows the next key following the harmonic mixings rules, highlighting the transition type and mood.",
+      "The suggestions panel shows the next key following the harmonic mixing rules, highlighting the transition type and mood.",
   },
   {
     title: "Add or override keys",
     description:
-      "Click a suggestion to append it to the timeline, or use the “Custom” option to enter your own root note.",
+      'Click a suggestion to append it to the timeline, or use the "Custom" option to enter your own root note.',
+  },
+  {
+    title: "Reorder tracks",
+    description:
+      "Drag the grip handle on any track to reorder your timeline. Harmonic rules recalculate automatically when you confirm the move, so you can experiment freely.",
   },
   {
     title: "Share or iterate",
@@ -157,6 +162,18 @@ export default function Documentation() {
               </p>
             </div>
           </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Importing from Traktor</h2>
+          <p className="text-muted-foreground leading-relaxed">
+            Already have a playlist built in Traktor? Export it as an NML file,
+            then click the upload button in the mix editor header to import it
+            directly into Legato. Track titles, artists, BPM, and key data are
+            preserved, giving you a head start on harmonic analysis. From there
+            you can reorder tracks, review transitions, and refine the flow
+            before your next gig.
+          </p>
         </section>
 
         <section className="space-y-3">
