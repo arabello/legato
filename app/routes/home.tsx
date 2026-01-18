@@ -25,8 +25,6 @@ const templates = [
       "Ride clockwise neighbors (±1) for butter-smooth phrasing and steady tension.",
     icon: TrendingUp,
     keys: ["7m", "8m", "9m", "10m"],
-    moreCount: 8,
-    popular: true,
   },
   {
     id: "relative-lift",
@@ -35,8 +33,6 @@ const templates = [
       "Alternate minor ↔ relative major (same number) to brighten vocals without clashes.",
     icon: Waves,
     keys: ["8m", "8d", "9d", "9m"],
-    moreCount: 6,
-    popular: false,
   },
   {
     id: "energy-boost",
@@ -45,8 +41,6 @@ const templates = [
       "Use +7/+2 jumps for semitone cross-wheel spikes—perfect for peak-time drops.",
     icon: Zap,
     keys: ["8m", "3m", "10m", "5m"],
-    moreCount: 4,
-    popular: false,
   },
   {
     id: "tension-release",
@@ -55,8 +49,6 @@ const templates = [
       "Creep through minors, then resolve into parallel/relative majors for payoff.",
     icon: Music,
     keys: ["9m", "10m", "10d", "9d"],
-    moreCount: 5,
-    popular: false,
   },
 ];
 
@@ -189,9 +181,6 @@ export default function Home() {
                         {template.keys.map((key) => (
                           <KeyBadge key={key} keyName={key} />
                         ))}
-                        <span className="text-muted-foreground text-sm">
-                          +{template.moreCount} more
-                        </span>
                       </div>
                     </div>
                     <div className="bg-secondary ml-4 flex h-10 w-10 items-center justify-center rounded-lg">
