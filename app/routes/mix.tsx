@@ -1,4 +1,29 @@
-import { MinusIcon, Plus, Trash2, Share2, Upload } from "lucide-react";
+import {
+  GripVertical,
+  MinusIcon,
+  Plus,
+  Trash2,
+  Share2,
+  Upload,
+} from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import * as React from "react";
 import {
   Link,
@@ -109,6 +134,164 @@ type MixSuggestion = HarmonicSuggestion & {
   keyLabel: string;
 };
 
+type SortableTrackItemProps = {
+  track: MixTrack;
+  rule?: HarmonicRuleDefinition;
+  index: number;
+  isSelected: boolean;
+  isLastTrack: boolean;
+  isDragging: boolean;
+  tracksCount: number;
+  onSelect: (trackId: string) => void;
+  onTitleChange: (trackId: string, value: string) => void;
+  onDetailsChange: (trackId: string, value: string) => void;
+  onRemove: (trackId: string) => void;
+};
+
+function SortableTrackItem({
+  track,
+  rule,
+  index,
+  isSelected,
+  isLastTrack,
+  isDragging,
+  tracksCount,
+  onSelect,
+  onTitleChange,
+  onDetailsChange,
+  onRemove,
+}: SortableTrackItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: track.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const ruleType = rule?.type;
+  const ruleMood = rule?.mood;
+  const showDragHandle = tracksCount > 1;
+
+  return (
+    <React.Fragment>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="group relative"
+        onClick={() => onSelect(track.id)}
+      >
+        {/* Track Node */}
+        <div className="flex items-center gap-6 py-4">
+          {/* Left side - Relationship info */}
+          <div className="flex w-32 flex-col items-end gap-4 text-right">
+            {rule && (
+              <span className="text-muted-foreground text-sm">{rule.name}</span>
+            )}
+            {index > 0 && (
+              <div className="flex items-center gap-2">
+                {ruleType && <TransitionTypeBadge value={ruleType} />}
+                {ruleMood && <TransitionMoodBadge value={ruleMood} />}
+              </div>
+            )}
+          </div>
+
+          {/* Key Node */}
+          <KeyNode keyName={formatOpenKey(track.key)} isActive={isSelected} />
+
+          {/* Right side - Track info */}
+          <div className="flex items-start gap-3">
+            <div className="w-48">
+              <input
+                value={track.title ?? ""}
+                onChange={(event) =>
+                  onTitleChange(track.id, event.target.value)
+                }
+                placeholder="Add track title..."
+                className="font-medium outline-none focus-visible:ring-0"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+              />
+              <input
+                value={track.details || ""}
+                onChange={(event) =>
+                  onDetailsChange(track.id, event.target.value)
+                }
+                placeholder="Add track BPM or notes"
+                className="text-muted-foreground mt-1 w-full text-sm outline-none focus-visible:ring-0"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+              />
+            </div>
+            {showDragHandle && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground cursor-grab opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+                {...attributes}
+                {...listeners}
+              >
+                <GripVertical className="h-4 w-4" />
+                <span className="sr-only">Drag to reorder</span>
+              </Button>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:bg-destructive opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus-visible:opacity-100"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Remove track</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remove this track?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {isLastTrack
+                      ? "This will permanently remove the final track from your timeline."
+                      : "Removing this key will relink the harmonic rule between the surrounding tracks. The next track's transition will refresh or disappear accordingly."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => onRemove(track.id)}
+                  >
+                    Remove
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </div>
+      {/* Separator */}
+      <MinusIcon className="text-muted-foreground/30 h-4 w-4 -rotate-90" />
+
+      {/* Add Track Button */}
+      {isLastTrack && (
+        <div className="mt-5 flex justify-center">
+          <button className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full">
+            <Plus className="h-6 w-6" />
+          </button>
+        </div>
+      )}
+    </React.Fragment>
+  );
+}
+
 export default function Mix() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -121,6 +304,7 @@ export default function Mix() {
     updateMixName,
     updateTrack,
     removeTrack,
+    moveTrack,
     clearTimeline,
     importMixFromNml,
   } = useOutletContext<AppLayoutContext>();
@@ -142,6 +326,20 @@ export default function Mix() {
     "idle",
   );
   const importFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [activeTrackId, setActiveTrackId] = React.useState<string | null>(null);
+  const [pendingMove, setPendingMove] = React.useState<{
+    trackId: string;
+    fromIndex: number;
+    toIndex: number;
+  } | null>(null);
+  const [moveDialogOpen, setMoveDialogOpen] = React.useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const handleImportClick = () => {
     importFileInputRef.current?.click();
@@ -220,6 +418,20 @@ export default function Mix() {
   const anchorKey = anchorOpenKey ? formatOpenKey(anchorOpenKey) : "1m";
   const isTimelineEmpty = (mix?.tracks.length ?? 0) === 0;
 
+  // Compute display order: when there's a pending move, show tracks in the new order
+  const displayTracks = React.useMemo(() => {
+    if (!mix) return [];
+    if (!pendingMove) return mix.tracks;
+
+    const tracks = [...mix.tracks];
+    const fromIndex = tracks.findIndex((t) => t.id === pendingMove.trackId);
+    if (fromIndex === -1) return mix.tracks;
+
+    const [movedTrack] = tracks.splice(fromIndex, 1);
+    tracks.splice(pendingMove.toIndex, 0, movedTrack);
+    return tracks;
+  }, [mix, pendingMove]);
+
   const harmonicSuggestions = React.useMemo<MixSuggestion[]>(() => {
     return getHarmonicSuggestions(anchorKey)
       .map((suggestion) => {
@@ -236,14 +448,14 @@ export default function Mix() {
     if (!mix) {
       return [];
     }
-    return mix.tracks.map((track, index) => {
-      const previousKey = mix.tracks[index - 1]?.key;
+    return displayTracks.map((track, index) => {
+      const previousKey = displayTracks[index - 1]?.key;
       return {
         track,
         rule: describeTransition(previousKey, track.key),
       };
     });
-  }, [mix, trackSignature]);
+  }, [mix, displayTracks]);
 
   React.useEffect(() => {
     if (!mix) {
@@ -365,6 +577,40 @@ export default function Mix() {
     clearTimeline(mix.id);
     setClearTimelineDialogOpen(false);
   };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveTrackId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveTrackId(null);
+    const { active, over } = event;
+    if (!over || !mix) return;
+
+    const fromIndex = mix.tracks.findIndex((t) => t.id === active.id);
+    const toIndex = mix.tracks.findIndex((t) => t.id === over.id);
+
+    if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+      setPendingMove({ trackId: active.id as string, fromIndex, toIndex });
+      setMoveDialogOpen(true);
+    }
+  };
+
+  const handleConfirmMove = () => {
+    if (!mix || !pendingMove) return;
+    moveTrack(mix.id, pendingMove.trackId, pendingMove.toIndex);
+    setPendingMove(null);
+    setMoveDialogOpen(false);
+  };
+
+  const handleCancelMove = () => {
+    setPendingMove(null);
+    setMoveDialogOpen(false);
+  };
+
+  const activeTrack = activeTrackId
+    ? mix?.tracks.find((t) => t.id === activeTrackId)
+    : null;
 
   if (!mix) {
     return (
@@ -510,127 +756,79 @@ export default function Mix() {
           </div>
         </div>
 
+        {/* Move Track Confirmation Dialog */}
+        <AlertDialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Move this track?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Moving this track will recalculate harmonic rules for all
+                affected transitions. The relationships between surrounding
+                tracks will update automatically.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelMove}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmMove}>
+                Move track
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Track Timeline */}
-        <div className="flex flex-col items-center">
-          {trackTransitions.map(({ track, rule }, index) => {
-            const ruleType = rule?.type;
-            const ruleMood = rule?.mood;
-            const isSelected = track.id === selectedTrackId;
-            const isLastTrack = index === mix.tracks.length - 1;
-            return (
-              <React.Fragment key={track.id}>
-                <div
-                  className="group relative"
-                  onClick={() => setSelectedTrackId(track.id)}
-                >
-                  {/* Track Node */}
-                  <div className="flex items-center gap-6 py-4">
-                    {/* Left side - Relationship info */}
-                    <div className="flex w-32 flex-col items-end gap-4 text-right">
-                      {rule && (
-                        <span className="text-muted-foreground text-sm">
-                          {rule.name}
-                        </span>
-                      )}
-                      {index > 0 && (
-                        <div className="flex items-center gap-2">
-                          {ruleType && <TransitionTypeBadge value={ruleType} />}
-                          {ruleMood && <TransitionMoodBadge value={ruleMood} />}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Key Node */}
-                    <KeyNode
-                      keyName={formatOpenKey(track.key)}
-                      isActive={isSelected}
-                    />
-
-                    {/* Right side - Track info */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-48">
-                        <input
-                          value={track.title ?? ""}
-                          onChange={(event) =>
-                            handleTrackTitleChange(track.id, event.target.value)
-                          }
-                          placeholder="Add track title..."
-                          className="font-medium outline-none focus-visible:ring-0"
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.currentTarget.blur();
-                            }
-                          }}
-                        />
-                        <input
-                          value={track.details || ""}
-                          onChange={(event) =>
-                            handleTrackDetailsChange(
-                              track.id,
-                              event.target.value,
-                            )
-                          }
-                          placeholder="Add track BPM or notes"
-                          className="text-muted-foreground mt-1 w-full text-sm outline-none focus-visible:ring-0"
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.currentTarget.blur();
-                            }
-                          }}
-                        />
-                      </div>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Remove track</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Remove this track?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {isLastTrack
-                                ? "This will permanently remove the final track from your timeline."
-                                : "Removing this key will relink the harmonic rule between the surrounding tracks. The next track’s transition will refresh or disappear accordingly."}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => handleRemoveTrack(track.id)}
-                            >
-                              Remove
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={displayTracks.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="flex flex-col items-center">
+              {trackTransitions.map(({ track, rule }, index) => (
+                <SortableTrackItem
+                  key={track.id}
+                  track={track}
+                  rule={rule}
+                  index={index}
+                  isSelected={track.id === selectedTrackId}
+                  isLastTrack={index === displayTracks.length - 1}
+                  isDragging={track.id === activeTrackId}
+                  tracksCount={displayTracks.length}
+                  onSelect={setSelectedTrackId}
+                  onTitleChange={handleTrackTitleChange}
+                  onDetailsChange={handleTrackDetailsChange}
+                  onRemove={handleRemoveTrack}
+                />
+              ))}
+            </div>
+          </SortableContext>
+          <DragOverlay dropAnimation={null}>
+            {activeTrack && (
+              <div className="pointer-events-none opacity-60">
+                <div className="flex items-center gap-6 py-4">
+                  <div className="flex w-32 flex-col items-end gap-4 text-right" />
+                  <KeyNode keyName={formatOpenKey(activeTrack.key)} />
+                  <div className="w-48">
+                    <p className="font-medium">
+                      {activeTrack.title || "Untitled"}
+                    </p>
+                    {activeTrack.details && (
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {activeTrack.details}
+                      </p>
+                    )}
                   </div>
                 </div>
-                {/* Separator */}
-                <MinusIcon className="text-muted-foreground/30 h-4 w-4 -rotate-90" />
-
-                {/* Add Track Button */}
-                {isLastTrack && (
-                  <div className="mt-5 flex justify-center">
-                    <button className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full">
-                      <Plus className="h-6 w-6" />
-                    </button>
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
 
         {isTimelineEmpty ? (
           <Card className="mx-auto mt-8 max-w-xl">

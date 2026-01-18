@@ -20,6 +20,7 @@ import {
   createMixRecord,
   createMixFromNml,
   loadMixes,
+  moveTrack as moveTrackInMix,
   removeTrack as removeTrackFromMix,
   saveMixes,
   renameMix,
@@ -45,6 +46,7 @@ export type AppLayoutContext = {
   ) => void;
   clearTimeline: (mixId: string) => void;
   removeTrack: (mixId: string, trackId: string) => void;
+  moveTrack: (mixId: string, trackId: string, toIndex: number) => void;
   importMixFromNml: (nmlContent: string) => Mix | null;
 };
 
@@ -128,6 +130,17 @@ export default function AppLayout() {
     );
   }, []);
 
+  const moveTrack = React.useCallback(
+    (mixId: string, trackId: string, toIndex: number) => {
+      setMixes((prev) =>
+        prev.map((mix) =>
+          mix.id === mixId ? moveTrackInMix(mix, trackId, toIndex) : mix,
+        ),
+      );
+    },
+    [],
+  );
+
   const clearTimeline = React.useCallback((mixId: string) => {
     setMixes((prev) =>
       prev.map((mix) => (mix.id === mixId ? clearMixTimeline(mix) : mix)),
@@ -161,6 +174,7 @@ export default function AppLayout() {
       updateTrack,
       clearTimeline,
       removeTrack,
+      moveTrack,
       importMixFromNml,
     }),
     [
@@ -174,6 +188,7 @@ export default function AppLayout() {
       updateTrack,
       clearTimeline,
       removeTrack,
+      moveTrack,
       importMixFromNml,
     ],
   );

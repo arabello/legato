@@ -262,6 +262,20 @@ export function removeTrack(mix: Mix, trackId: string): Mix {
   return { ...mix, startKey: nextStartKey, tracks: nextTracks };
 }
 
+export function moveTrack(mix: Mix, trackId: string, toIndex: number): Mix {
+  const fromIndex = mix.tracks.findIndex((track) => track.id === trackId);
+  if (fromIndex === -1 || fromIndex === toIndex) {
+    return mix;
+  }
+  const tracks = [...mix.tracks];
+  const [movedTrack] = tracks.splice(fromIndex, 1);
+  tracks.splice(toIndex, 0, movedTrack);
+
+  // Update startKey if first track changed
+  const nextStartKey = tracks[0]?.key ?? mix.startKey;
+  return { ...mix, startKey: nextStartKey, tracks };
+}
+
 export function clearMixTimeline(mix: Mix): Mix {
   return {
     ...mix,
