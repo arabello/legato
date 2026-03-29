@@ -9,6 +9,7 @@ export default [
   layout("routes/layout.tsx", [
     index("routes/home.tsx"),
     route("documentation", "routes/documentation.tsx"),
+    route("camelot-wheel", "routes/camelot-wheel.tsx"),
     route("mix/:id", "routes/mix.tsx"),
   ]),
 ] satisfies RouteConfig;

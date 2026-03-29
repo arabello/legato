@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   Home,
   FileText,
+  Circle,
   Plus,
   AudioWaveform,
   Trash2,
@@ -284,6 +285,19 @@ export default function AppLayout() {
         >
           <FileText className="h-4 w-4" />
           Documentation
+        </NavLink>
+        <NavLink
+          to="/camelot-wheel"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+              isActive
+                ? "bg-secondary text-foreground"
+                : "text-sidebar-foreground hover:bg-secondary hover:text-foreground"
+            }`
+          }
+        >
+          <Circle className="h-4 w-4" />
+          Camelot Wheel
         </NavLink>
         <button
           type="button"
